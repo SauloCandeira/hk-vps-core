@@ -11,7 +11,7 @@
     "infra:sync": "bash scripts/infra-auto-sync.sh",
     "infra:restart": "pm2 restart hktech-ai --update-env",
     "infra:health": "curl -s http://127.0.0.1:3001/api/system/status | grep '"status"' || echo 'Gateway health check FAILED.'",
-    "infra:clean": "pm2 delete all && npm run infra:sync"
+    "infra:clean": "pm2 delete all && npm run infra:sync",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
