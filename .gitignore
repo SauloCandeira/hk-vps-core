@@ -1,0 +1,62 @@
+#################################################
+# 🔒 SISTEMA E SEGURANÇA (NUNCA VERSIONAR)
+#################################################
+.ssh/
+.bash_history
+.cache/
+.config/
+.local/
+.npm/
+.vscode-server/
+.pm2/
+.copilot/
+.wget-hsts
+
+#################################################
+# 🤖 OPENCLAW RUNTIME (DADOS VIVOS DA IA)
+#################################################
+.openclaw/
+openclaw.json
+sessions/
+runtime/
+logs/
+cache/
+tmp/
+
+#################################################
+# 🔑 SEGREDOS E TOKENS
+#################################################
+.env
+.env.*
+*.key
+*.pem
+*.crt
+*.p12
+secrets.json
+config.json
+credentials.json
+
+#################################################
+# 📦 NODE / BUILD
+#################################################
+node_modules/
+dist/
+build/
+.next/
+coverage/
+npm-debug.log*
+yarn.lock
+
+#################################################
+# 🗄️ DATABASES LOCAIS
+#################################################
+*.db
+*.sqlite
+*.sqlite3
+
+#################################################
+# 🧹 LOGS
+#################################################
+*.log
+logs/
+tmp/
