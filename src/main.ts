@@ -2,6 +2,7 @@ import 'dotenv/config';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import cors from '@fastify/cors';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -15,7 +16,8 @@ async function bootstrap() {
     ? process.env.ADMIN_ORIGINS.split(',').map((entry) => entry.trim()).filter(Boolean)
     : [];
 
-  app.enableCors({
+  // @ts-ignore
+  await app.register(cors, {
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
       const allowedOrigins = envOrigins.length ? envOrigins : defaultOrigins;

@@ -64,3 +64,4 @@ tmp/
 # Permitir serviços de runtime do código Nest
 !src/runtime/
 !src/runtime/**
+/generated/prisma
