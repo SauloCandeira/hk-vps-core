@@ -3,7 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { defaultAgentStatus, knownAgents, runtimeConfig } from '../config/runtime.config';
 import { listDirectories, listFilesByMtime, safeExists, safeListDir, safeReadFile, safeStat } from '../common/fs-utils';
 
-type ContextBuckets = { system: string[]; agents: string[]; runtime: string[] };
+type ContextEntry = { file: string; content: string };
+type ContextBuckets = { system: ContextEntry[]; agents: ContextEntry[]; runtime: ContextEntry[] };
 
 @Injectable()
 export class RuntimeService {
@@ -101,7 +102,7 @@ export class RuntimeService {
     };
   }
 
-  private readContextBucket(bucket: 'system' | 'agents' | 'runtime') {
+  private readContextBucket(bucket: 'system' | 'agents' | 'runtime'): ContextEntry[] {
     const bucketDir = path.join(runtimeConfig.contextsDir, bucket);
     return safeListDir(bucketDir)
       .filter((fileName) => fileName.endsWith('.md'))
