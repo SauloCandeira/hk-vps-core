@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import apiRouter from "./api/index.js";
-import { checkDailyBudget } from "./services/costGuard.service.ts";
+import { checkDailyBudget } from "./services/costGuard.service.js";
 import { serverConfig } from "../config/server.config.js";
 import { rateLimitMiddleware } from "./middleware/rateLimit.middleware.js";
 import { logSystemEvent, logError } from "./services/logging.service.js";

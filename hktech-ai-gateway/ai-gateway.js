@@ -80,6 +80,17 @@ async function runLocalHealthChecks() {
   return results;
 }
 
+
+import fs from "fs";
+import path from "path";
+
+import "dotenv/config";
+import { createApp } from "./core/app.js";
+import { serverConfig } from "./config/server.config.js";
+import net from "net";
+
+const app = createApp();
+
 // POST /api/system/run-tests
 app.post("/api/system/run-tests", async (req, res) => {
   // Auth: INTERNAL_API_KEY required
@@ -119,9 +130,6 @@ app.post("/api/system/run-tests", async (req, res) => {
   await logTestTelemetry(0);
   res.json({ status: "ok", testResults });
 });
-// ...existing code...
-import fs from "fs";
-import path from "path";
 
 // Infra observability endpoints
 const infraLogPath = "/root/logs/infra-sync.log";
@@ -166,13 +174,6 @@ app.get("/api/system/infra-logs", (req, res) => {
     res.status(404).send("No infra logs found.");
   }
 });
-
-import "dotenv/config";
-import { createApp } from "./core/app.js";
-import { serverConfig } from "./config/server.config.js";
-import net from "net";
-
-const app = createApp();
 
 console.log("[ENV CHECK] INTERNAL_API_KEY loaded:", !!process.env.INTERNAL_API_KEY);
 

@@ -1,0 +1,2958 @@
+--
+-- PostgreSQL database dump
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS vector;
+
+\restrict EFqf3L82JU8oD9fwkPMLZ1Qyoas5U1AZOQfZcqb7VaYwbIWvoSYdAuuiDZN8NEd
+
+-- Dumped from database version 18.1
+-- Dumped by pg_dump version 18.1
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+--
+-- Name: vector; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION vector; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access methods';
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: accesses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.accesses (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    source text DEFAULT 'web'::text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: admin_actions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.admin_actions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    admin_id text NOT NULL,
+    action text NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: ai_reports; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_reports (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    domain character varying(50) DEFAULT 'IA'::character varying,
+    status text DEFAULT ''::text,
+    summary text DEFAULT ''::text,
+    decisions jsonb DEFAULT '[]'::jsonb,
+    risks jsonb DEFAULT '[]'::jsonb,
+    next_actions jsonb DEFAULT '[]'::jsonb,
+    issue_keys jsonb DEFAULT '[]'::jsonb,
+    files_modified jsonb DEFAULT '[]'::jsonb,
+    risk_classification text DEFAULT ''::text,
+    pr_link text DEFAULT ''::text,
+    quality_gate text DEFAULT ''::text,
+    build_result text DEFAULT ''::text,
+    test_result text DEFAULT ''::text,
+    execution_duration_ms integer,
+    confidence_score numeric,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: assets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.assets (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    asset_class text NOT NULL,
+    ticker text DEFAULT ''::text,
+    risk_level text DEFAULT 'Médio'::text,
+    current_price numeric(12,2) DEFAULT 0,
+    currency text DEFAULT 'BRL'::text,
+    created_at timestamp with time zone DEFAULT now(),
+    total_supply numeric(18,2) DEFAULT 0,
+    available_supply numeric(18,2) DEFAULT 0,
+    is_primary boolean DEFAULT false
+);
+
+
+--
+-- Name: card_listings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.card_listings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    card_id uuid,
+    seller_user_id text NOT NULL,
+    price numeric(12,2) NOT NULL,
+    status text DEFAULT 'active'::text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: card_transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.card_transactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    card_id uuid,
+    seller_user_id text NOT NULL,
+    buyer_user_id text NOT NULL,
+    price numeric(12,2) NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: commerce_orders; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.commerce_orders (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    item_type text NOT NULL,
+    item_id text NOT NULL,
+    amount numeric(12,2) DEFAULT 0,
+    currency text DEFAULT 'BRL'::text,
+    status text DEFAULT 'completed'::text,
+    payment_method text DEFAULT 'pix'::text,
+    payment_reference text DEFAULT ''::text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: costs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.costs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    cost_value text DEFAULT ''::text,
+    created_at timestamp with time zone DEFAULT now(),
+    billing_cycle text DEFAULT 'monthly'::text
+);
+
+
+--
+-- Name: dao_mybot_balances; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dao_mybot_balances (
+    mybot_id text NOT NULL,
+    user_id text NOT NULL,
+    balance numeric(14,2) DEFAULT 1000,
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: dao_proposals; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dao_proposals (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    title text NOT NULL,
+    description text NOT NULL,
+    created_by_user_id text NOT NULL,
+    status text DEFAULT 'PENDING_REVIEW'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    approved_by_admin_id text,
+    voting_start timestamp with time zone,
+    voting_end timestamp with time zone
+);
+
+
+--
+-- Name: dao_votes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dao_votes (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    proposal_id uuid,
+    user_id text NOT NULL,
+    mybot_id text NOT NULL,
+    vote text NOT NULL,
+    amount_bet numeric(12,2) NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: deposit_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.deposit_accounts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    cpf text DEFAULT ''::text,
+    balance numeric(14,2) DEFAULT 0,
+    currency text DEFAULT 'BRL'::text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: deposit_transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.deposit_transactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    account_id uuid,
+    method text DEFAULT 'pix'::text,
+    amount numeric(14,2) NOT NULL,
+    status text DEFAULT 'confirmed'::text,
+    reference text DEFAULT ''::text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: fund_holdings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.fund_holdings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    fund_id uuid,
+    asset_id uuid,
+    weight numeric(5,2) DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: funds; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.funds (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    description text DEFAULT ''::text,
+    management_fee numeric(6,2) DEFAULT 0,
+    nav numeric(14,2) DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: ia_agents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ia_agents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    description text DEFAULT ''::text,
+    specialty text DEFAULT ''::text,
+    system_prompt text DEFAULT ''::text,
+    autonomy_level text DEFAULT ''::text,
+    is_active boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: ia_contexts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ia_contexts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    title text NOT NULL,
+    content text NOT NULL,
+    context_type text DEFAULT ''::text,
+    related_agent_id uuid,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: ia_conversations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ia_conversations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    title text DEFAULT ''::text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: ia_memory; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ia_memory (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    content text NOT NULL,
+    embedding public.vector(1536),
+    context_type text DEFAULT ''::text,
+    related_task_id uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    prompt_id uuid,
+    source_type text,
+    source_id text
+);
+
+
+--
+-- Name: ia_messages; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ia_messages (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    conversation_id uuid NOT NULL,
+    role text NOT NULL,
+    content text NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: ia_orchestrator_executions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ia_orchestrator_executions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    orchestrator_id uuid,
+    version integer DEFAULT 1 NOT NULL,
+    steps_executed jsonb DEFAULT '[]'::jsonb NOT NULL,
+    agents_used jsonb DEFAULT '[]'::jsonb NOT NULL,
+    memory_retrieved_count integer DEFAULT 0 NOT NULL,
+    token_usage integer DEFAULT 0 NOT NULL,
+    execution_time integer,
+    status text DEFAULT ''::text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: ia_orchestrators; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ia_orchestrators (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    execution_flow jsonb DEFAULT '[]'::jsonb NOT NULL,
+    is_active boolean DEFAULT true,
+    version integer DEFAULT 1,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    storage_url text DEFAULT ''::text
+);
+
+
+--
+-- Name: ia_prompt_versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ia_prompt_versions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    prompt_id uuid NOT NULL,
+    version integer NOT NULL,
+    storage_url text NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: ia_prompts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ia_prompts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    title text NOT NULL,
+    file_name text NOT NULL,
+    category text NOT NULL,
+    description text DEFAULT ''::text,
+    storage_url text NOT NULL,
+    is_active boolean DEFAULT true,
+    version integer DEFAULT 1,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: internal_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.internal_accounts (
+    user_id text NOT NULL,
+    balance numeric(14,2) DEFAULT 20,
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: internal_transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.internal_transactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    from_user_id text,
+    to_user_id text,
+    amount numeric(14,2) NOT NULL,
+    reason text DEFAULT ''::text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: llm_telemetry; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.llm_telemetry (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text,
+    agent text,
+    model text NOT NULL,
+    provider text NOT NULL,
+    endpoint text NOT NULL,
+    prompt_tokens integer DEFAULT 0 NOT NULL,
+    completion_tokens integer DEFAULT 0 NOT NULL,
+    total_tokens integer DEFAULT 0 NOT NULL,
+    cost_usd numeric(14,6) DEFAULT 0 NOT NULL,
+    status text DEFAULT 'ok'::text NOT NULL,
+    source text DEFAULT 'api'::text NOT NULL,
+    latency_ms integer DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: mybot_activations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_activations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    cpf_hash text NOT NULL,
+    deposit_tx_id uuid,
+    credits_granted numeric(12,2) DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: mybot_battle_queue; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_battle_queue (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    card_id uuid NOT NULL,
+    bet_amount numeric(12,2) NOT NULL,
+    level integer DEFAULT 1,
+    rarity text DEFAULT 'comum'::text,
+    rarity_rank integer DEFAULT 0,
+    status text DEFAULT 'waiting'::text,
+    matched_battle_id uuid,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: mybot_battles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_battles (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id_a text NOT NULL,
+    user_id_b text NOT NULL,
+    card_id_a uuid NOT NULL,
+    card_id_b uuid NOT NULL,
+    bet_amount numeric(12,2) NOT NULL,
+    battle_type text NOT NULL,
+    gas_pct numeric(5,4) NOT NULL,
+    map_name text NOT NULL,
+    map_weights jsonb NOT NULL,
+    seed text NOT NULL,
+    power_a numeric(12,4) NOT NULL,
+    power_b numeric(12,4) NOT NULL,
+    power_final_a numeric(12,4) NOT NULL,
+    power_final_b numeric(12,4) NOT NULL,
+    winner_user_id text NOT NULL,
+    payout_amount numeric(12,2) NOT NULL,
+    gas_amount numeric(12,2) NOT NULL,
+    status text DEFAULT 'resolved'::text,
+    created_at timestamp with time zone DEFAULT now(),
+    modifiers jsonb DEFAULT '[]'::jsonb NOT NULL,
+    random_factor_a numeric(6,4) DEFAULT 1 NOT NULL,
+    random_factor_b numeric(6,4) DEFAULT 1 NOT NULL,
+    xp_a integer DEFAULT 0 NOT NULL,
+    xp_b integer DEFAULT 0 NOT NULL,
+    reason text DEFAULT ''::text
+);
+
+
+--
+-- Name: mybot_bets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_bets (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    card_id uuid NOT NULL,
+    battle_id uuid,
+    bet_amount numeric(12,2) NOT NULL,
+    possible_return numeric(12,2) DEFAULT 0 NOT NULL,
+    gas_amount numeric(12,2) DEFAULT 0 NOT NULL,
+    status text DEFAULT 'PENDENTE'::text NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    finalized_at timestamp with time zone,
+    redeemed_at timestamp with time zone
+);
+
+
+--
+-- Name: mybot_cpf_registry; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_cpf_registry (
+    cpf_hash text NOT NULL,
+    user_id text NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: mybot_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    event_type text NOT NULL,
+    source text DEFAULT ''::text,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    reversible boolean DEFAULT true,
+    occurred_at timestamp with time zone DEFAULT now(),
+    created_at timestamp with time zone DEFAULT now(),
+    reverted_at timestamp with time zone,
+    correlation_id text DEFAULT ''::text,
+    version integer DEFAULT 1
+);
+
+
+--
+-- Name: mybot_evolutions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_evolutions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    card_id uuid NOT NULL,
+    attribute text NOT NULL,
+    before_value integer NOT NULL,
+    after_value integer NOT NULL,
+    cost numeric(12,2) NOT NULL,
+    points_spent integer DEFAULT 1 NOT NULL,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: mybot_maps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_maps (
+    id text NOT NULL,
+    name text NOT NULL,
+    position_x numeric(5,2) NOT NULL,
+    position_y numeric(5,2) NOT NULL,
+    icon text DEFAULT ''::text,
+    visual_meta jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: mybot_memory; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_memory (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    layer text NOT NULL,
+    memory_key text NOT NULL,
+    value jsonb NOT NULL,
+    version integer DEFAULT 1,
+    is_active boolean DEFAULT true,
+    last_event_id uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: mybot_movements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_movements (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    bot_id uuid NOT NULL,
+    user_id text NOT NULL,
+    from_map_id text,
+    to_map_id text NOT NULL,
+    reason text NOT NULL,
+    battle_id uuid,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: mybot_profiles; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_profiles (
+    user_id text NOT NULL,
+    card_id uuid,
+    available_points integer DEFAULT 0,
+    loss_streak integer DEFAULT 0,
+    high_bet_streak integer DEFAULT 0,
+    last_high_bet_at timestamp with time zone,
+    last_battle_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    origin_map_id text,
+    current_map_id text,
+    origin_pos_x numeric(5,2),
+    origin_pos_y numeric(5,2),
+    current_pos_x numeric(5,2),
+    current_pos_y numeric(5,2),
+    last_movement_at timestamp with time zone
+);
+
+
+--
+-- Name: mybot_stats; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybot_stats (
+    user_id text NOT NULL,
+    content_accessed_count integer DEFAULT 0,
+    projects_purchased_count integer DEFAULT 0,
+    projects_created_count integer DEFAULT 0,
+    courses_started_count integer DEFAULT 0,
+    courses_completed_count integer DEFAULT 0,
+    marketplace_interactions_count integer DEFAULT 0,
+    tool_usage_count integer DEFAULT 0,
+    feedback_score integer DEFAULT 0,
+    last_event_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: mybots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.mybots (
+    user_id text NOT NULL,
+    myalien_user_id text DEFAULT ''::text,
+    stage text DEFAULT 'assistant'::text,
+    stage_reason text DEFAULT ''::text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    image_url text DEFAULT ''::text
+);
+
+
+--
+-- Name: orders; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.orders (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    asset_id uuid,
+    order_type text DEFAULT 'buy'::text,
+    price numeric(12,2) DEFAULT 0,
+    quantity numeric(12,4) DEFAULT 0,
+    status text DEFAULT 'open'::text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: price_history; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.price_history (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    asset_id uuid,
+    price numeric(12,2) NOT NULL,
+    recorded_at date DEFAULT CURRENT_DATE
+);
+
+
+--
+-- Name: product_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_types (
+    id text NOT NULL,
+    label text NOT NULL
+);
+
+
+--
+-- Name: products; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.products (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    price text NOT NULL,
+    description text DEFAULT ''::text,
+    created_at timestamp with time zone DEFAULT now(),
+    show_on_home boolean DEFAULT false,
+    purchase_price text DEFAULT ''::text,
+    sale_price text DEFAULT ''::text,
+    product_type text DEFAULT 'digital'::text,
+    base_project_id uuid,
+    show_on_marketplace boolean DEFAULT false,
+    template_id uuid
+);
+
+
+--
+-- Name: project_tasks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.project_tasks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    project_id uuid,
+    title text NOT NULL,
+    description text DEFAULT ''::text,
+    status text DEFAULT 'TODO'::text,
+    "position" integer DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    generated_by_ai boolean DEFAULT false,
+    domain character varying(50),
+    risk_level text,
+    pr_link text,
+    confidence_score numeric,
+    execution_result text,
+    origin text,
+    report_id uuid,
+    linked_agent_id uuid,
+    context_reference text,
+    execution_logs jsonb DEFAULT '[]'::jsonb,
+    specialist_type text
+);
+
+
+--
+-- Name: projects; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.projects (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    description text DEFAULT ''::text,
+    repository text DEFAULT ''::text,
+    domain text DEFAULT ''::text,
+    hosting text DEFAULT ''::text,
+    status text DEFAULT 'Ativo'::text,
+    paid boolean DEFAULT false,
+    created_at timestamp with time zone DEFAULT now(),
+    is_public boolean DEFAULT true,
+    project_type text DEFAULT ''::text,
+    sale_price text DEFAULT ''::text,
+    production_cost text DEFAULT ''::text,
+    purchase_count integer DEFAULT 0,
+    owner_user_id text DEFAULT ''::text,
+    managed_by_ai boolean DEFAULT false,
+    task_creation_policy character varying(32),
+    allow_auto_backlog_if_empty boolean DEFAULT false,
+    backlog_bootstrap boolean DEFAULT false,
+    ai_autonomy_level character varying(32),
+    last_backlog_bootstrap_at timestamp without time zone,
+    product_id uuid,
+    base_project_id uuid,
+    purchase_id uuid,
+    created_from_purchase boolean DEFAULT false,
+    is_template boolean DEFAULT false,
+    html_content text DEFAULT ''::text,
+    css_content text DEFAULT ''::text,
+    updated_at timestamp with time zone DEFAULT now(),
+    version integer DEFAULT 1,
+    template_id uuid NOT NULL,
+    template_version integer NOT NULL
+);
+
+
+--
+-- Name: purchases; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.purchases (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    product_id uuid,
+    price numeric(12,2) DEFAULT 0,
+    status text DEFAULT 'completed'::text,
+    created_at timestamp with time zone DEFAULT now(),
+    project_id uuid,
+    purchase_type text DEFAULT 'paid'::text
+);
+
+
+--
+-- Name: sales; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sales (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    customer_name text NOT NULL,
+    amount numeric(12,2) NOT NULL,
+    currency text DEFAULT 'BRL'::text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.settings (
+    key text NOT NULL,
+    value text NOT NULL
+);
+
+
+--
+-- Name: system_config; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.system_config (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    key text NOT NULL,
+    value jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: template_files; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.template_files (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    template_id uuid NOT NULL,
+    file_name character varying(150) NOT NULL,
+    file_type character varying(20) DEFAULT 'html'::character varying,
+    content text DEFAULT ''::text,
+    "position" integer DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: template_resources; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.template_resources (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    template_id uuid NOT NULL,
+    title character varying(150) NOT NULL,
+    type character varying(50) DEFAULT 'link'::character varying,
+    content text DEFAULT ''::text,
+    "position" integer DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: template_tasks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.template_tasks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    template_id uuid NOT NULL,
+    title text NOT NULL,
+    description text DEFAULT ''::text,
+    status text DEFAULT 'TODO'::text,
+    "position" integer DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: templates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.templates (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    description text DEFAULT ''::text,
+    version integer DEFAULT 1,
+    is_active boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    blog_content text DEFAULT ''::text,
+    level character varying(50) DEFAULT ''::character varying,
+    category character varying(100) DEFAULT ''::character varying
+);
+
+
+--
+-- Name: user_cards; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_cards (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    seed bigint NOT NULL,
+    name text NOT NULL,
+    species text NOT NULL,
+    class text NOT NULL,
+    rarity text NOT NULL,
+    attributes jsonb NOT NULL,
+    level integer DEFAULT 1,
+    xp integer DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    hash_seed text DEFAULT ''::text NOT NULL,
+    visual_meta jsonb DEFAULT '{}'::jsonb NOT NULL,
+    market_value numeric(12,2) DEFAULT 10,
+    image_url text DEFAULT ''::text
+);
+
+
+--
+-- Name: user_gamification; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_gamification (
+    user_id text NOT NULL,
+    plan text DEFAULT 'free'::text,
+    usage_score integer DEFAULT 0,
+    xp integer DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    auth_uid text DEFAULT ''::text,
+    name text DEFAULT ''::text,
+    email text NOT NULL,
+    photo_url text DEFAULT ''::text,
+    auth_provider text DEFAULT ''::text,
+    permission_level text DEFAULT 'A'::text,
+    status text DEFAULT 'Ativo'::text,
+    created_at timestamp with time zone DEFAULT now(),
+    last_login_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: wallet_positions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wallet_positions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    wallet_id uuid,
+    asset_id uuid,
+    quantity numeric(12,4) DEFAULT 0,
+    avg_price numeric(12,2) DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: wallets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wallets (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    cash_balance numeric(12,2) DEFAULT 0,
+    currency text DEFAULT 'BRL'::text,
+    created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Data for Name: accesses; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.accesses (id, source, created_at) FROM stdin;
+27ee6e7e-9c53-4940-b3a8-6ba00c76134e	web	2026-01-30 01:45:09.897129+00
+\.
+
+
+--
+-- Data for Name: admin_actions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.admin_actions (id, admin_id, action, created_at) FROM stdin;
+3e8791ca-32bf-47dc-bb46-f0972e1b7935	master@hktech.com.br	reset_purchases_all:3	2026-02-07 01:52:25.057733+00
+846a7108-f2c4-4f3a-b53c-bfda3eaf3afe	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:14:56.159005+00
+c5184a09-e579-4dcb-8c15-83666738aa52	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:17:39.72232+00
+36557978-081e-406f-8a75-c29fecdd1af0	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:18:23.112075+00
+d6ce7619-8d36-413b-b47b-62102491cbab	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:18:24.920973+00
+3aa0c240-8e0e-4551-b8dd-fba3dac461df	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:19:11.552481+00
+0c82f23c-ef9e-4064-a279-828178ecdd3b	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:31:46.01682+00
+88130378-76fe-4087-869c-b2b1a39fdd61	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:32:03.670781+00
+4551d01a-d680-450f-b706-d64e5c1ed447	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:32:52.765335+00
+cd7d47d0-e652-467b-888e-5382bb7a69b5	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:34:35.051382+00
+41a1ab43-b6f8-4531-8709-5982d64fc367	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:34:37.44318+00
+f4c03906-a438-4e26-9e04-004322a6b80f	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:34:44.060038+00
+9dbbed03-ed08-4911-9bba-cf3d4a8aa4c9	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:35:05.522696+00
+1912170e-96b8-44b0-8ff4-3b36475a9c46	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:36:37.001877+00
+526ea641-7187-4392-bdb3-908fef902a21	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:36:39.61577+00
+0d9f8ea4-4881-43de-b6e1-a0c5e52961c1	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:37:20.665006+00
+159de3ff-a460-4b6d-aa5b-3d7d5980d217	master@hktech.com.br	mybot_battles_list:1	2026-02-07 20:42:43.05959+00
+4aa51e8e-28dd-4ab1-9de3-2ed0c0c8355c	master@hktech.com.br	mybot_battles_list:1	2026-02-07 21:03:46.743175+00
+49898aea-7885-4c5b-ac3c-7222ca300e6e	master@hktech.com.br	mybot_ecosystem:2	2026-02-07 21:21:32.272445+00
+a3e8908b-eb3d-4102-8b80-5187b862ba2a	master@hktech.com.br	mybot_ecosystem:2	2026-02-07 21:21:32.615934+00
+80b5557d-03fc-444b-9c0e-950c2d6c121e	master@hktech.com.br	mybot_battles_list:1	2026-02-07 21:27:18.353335+00
+632accae-8322-4b59-a235-d268d277d584	master@hktech.com.br	mybot_ecosystem:2	2026-02-07 21:27:23.353652+00
+0e6fa968-a702-44ea-973e-717b3bf3e7a1	master@hktech.com.br	mybot_ecosystem:2	2026-02-07 21:27:23.664253+00
+6d6334cc-2e39-462c-9f05-a563f099ba44	master@hktech.com.br	mybot_ecosystem:2	2026-02-07 21:31:24.640515+00
+b45df92d-daa3-4d36-9c2d-8b52bd220bc9	master@hktech.com.br	mybot_ecosystem:2	2026-02-07 21:31:24.949203+00
+3374f97c-d91f-49f8-ad74-3e34634d0eb6	master@hktech.com.br	mybot_battles_list:1	2026-02-07 21:31:58.914267+00
+f4ad1f89-0c0a-47ed-afeb-189af768fe2b	master@hktech.com.br	mybot_battles_list:1	2026-02-07 21:32:58.67908+00
+fe6bb592-8207-4cae-bb1e-fe4cc4d69b71	master@hktech.com.br	mybot_battles_list:1	2026-02-11 20:58:03.375111+00
+2414116a-957a-4585-8d76-0e2fd60eec89	master@hktech.com.br	mybot_battles_list:1	2026-02-11 21:08:34.479126+00
+ae05bd42-b8da-4b10-951b-acb34f9aeb3f	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:08:39.29051+00
+4618c3d4-1fee-4108-8968-320f1e40588f	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:08:40.683163+00
+1d0510b8-247a-4c4f-87b7-cc7aa5615f0e	master@hktech.com.br	mybot_battles_list:1	2026-02-11 21:08:45.787282+00
+962fcf05-dbd2-439f-a23a-0385e1798e0d	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:08:46.4203+00
+9ed104c4-4c80-40f7-acb4-c4e5d107240d	master@hktech.com.br	mybot_battles_list:1	2026-02-11 21:08:46.759853+00
+ec372c99-4d52-4720-98d8-13b8cd2cc756	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:08:47.788023+00
+dc050d95-a160-4eec-92ff-56f89021b1a4	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:08:49.723373+00
+ae80baea-a736-4037-88fd-d6257708708d	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:08:51.132182+00
+200e4d8e-9516-4359-9885-e93e30c44801	master@hktech.com.br	mybot_battles_list:1	2026-02-11 21:22:53.638714+00
+05deb242-2295-4566-bc0d-eb2ff4a5ac95	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:23:01.142015+00
+57c5cbab-c1e6-4481-b376-1bb254828247	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:23:02.703725+00
+daf00d6b-7e43-44dd-8a6c-dc6d67becca4	master@hktech.com.br	mybot_battles_list:1	2026-02-11 21:28:53.706564+00
+d0a3d66f-9569-4fd0-ab00-74692ed51c05	master@hktech.com.br	mybot_battles_list:1	2026-02-11 21:28:58.073231+00
+f746e8b1-878b-455f-86d1-17bfc9b3ed56	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:29:02.987372+00
+c844be25-c0ba-4223-bd98-4e0db79609fe	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:29:04.734895+00
+5bcefd33-3771-4f10-b59d-de94f271803d	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:29:18.001569+00
+42514171-66ec-4ac5-ac17-6f3037eed025	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:29:18.170524+00
+5b4379df-2ca4-4ece-9539-37a80a48f749	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:29:18.701927+00
+4c082da9-89d7-4b1a-92e6-08c44d6d1a9f	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:29:18.898493+00
+66c6b9da-0429-45a2-9b10-4b5eed2c969c	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:33:38.613564+00
+f826bf93-35a6-4682-901a-7427153c9b7f	master@hktech.com.br	mybot_ecosystem:6	2026-02-11 21:33:40.435573+00
+601c1d23-0f11-43df-ba19-5ff1e169017c	master@hktech.com.br	reset_sales_paid:0	2026-02-11 23:26:19.276679+00
+aa192984-6ec5-4b89-8da9-ef4bfa339cc8	master@hktech.com.br	reset_cloned_projects:2	2026-02-11 23:32:18.22601+00
+a93046c5-a9fd-4e32-a2b0-be18187172ed	master@hktech.com.br	migrate_ia_tasks:0	2026-02-12 13:29:53.210682+00
+\.
+
+
+--
+-- Data for Name: ai_reports; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ai_reports (id, domain, status, summary, decisions, risks, next_actions, issue_keys, files_modified, risk_classification, pr_link, quality_gate, build_result, test_result, execution_duration_ms, confidence_score, created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: assets; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.assets (id, name, asset_class, ticker, risk_level, current_price, currency, created_at, total_supply, available_supply, is_primary) FROM stdin;
+5f7c394b-a7a8-426b-9d12-0b7a670d0909	Fundo SPE Leilões	Imóveis de Leilão	SPE-LEIL	Médio	100.00	BRL	2026-01-30 02:14:21.905325+00	0.00	0.00	f
+f21f9897-67c5-4f9a-bb86-4bc74446a6a0	Tech Growth Basket	Tecnologia	TECH-G	Alto	85.50	BRL	2026-01-30 02:14:21.905325+00	0.00	0.00	f
+a6546d48-ba98-41b1-b4a5-4c420cb661be	Índice Ações Brasil	Ações	IBR-100	Médio	92.75	BRL	2026-01-30 02:14:21.905325+00	0.00	0.00	f
+f046a6db-8de2-4caa-8706-035d0b927df7	Cotas SPE Principal	SPE	SPE-PRINC	Médio	1.00	BRL	2026-01-30 02:25:09.440092+00	1000000.00	1000000.00	t
+\.
+
+
+--
+-- Data for Name: card_listings; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.card_listings (id, card_id, seller_user_id, price, status, created_at) FROM stdin;
+d20856c3-9c29-4415-ae32-8a4b15319f77	7e4f39b4-b629-4cc7-a61c-04b716d801ee	saulolsc@gmail.com	10.00	active	2026-01-30 17:10:00.493942+00
+346c1b5d-da2e-4e9f-8379-23f8450094b6	edcb2ff0-7e41-4db5-b9b2-0cff1bb12f96	gusmaokamila2@gmail.com	30.00	active	2026-01-30 18:14:30.216564+00
+\.
+
+
+--
+-- Data for Name: card_transactions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.card_transactions (id, card_id, seller_user_id, buyer_user_id, price, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: commerce_orders; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.commerce_orders (id, user_id, item_type, item_id, amount, currency, status, payment_method, payment_reference, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: costs; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.costs (id, name, cost_value, created_at, billing_cycle) FROM stdin;
+f4dcadf2-68da-44bd-aae2-a9c3435810f3	Copilot GitHub Pro	56,67	2026-01-29 21:30:28.441321+00	monthly
+d17b104a-8a09-4cea-a824-9c7e13914b2b	Domínio BR (2 anos)	160	2026-01-29 21:30:28.441321+00	annual
+44ea26fb-ad87-4641-8f34-8a7fdcc89159	ChatGPT	50	2026-01-29 21:30:28.441321+00	monthly
+b799737c-70aa-44ca-8ffd-364de8a32876	Google Platform	50	2026-01-30 01:09:17.301222+00	monthly
+a9c9fdb4-9cb9-45d6-8c5e-d32551dbca1a	Hostinger VPS	303	2026-02-13 01:43:09.360819+00	annual
+\.
+
+
+--
+-- Data for Name: dao_mybot_balances; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.dao_mybot_balances (mybot_id, user_id, balance, updated_at) FROM stdin;
+7e4f39b4-b629-4cc7-a61c-04b716d801ee	saulolsc@gmail.com	0.00	2026-02-06 22:08:33.967983+00
+\.
+
+
+--
+-- Data for Name: dao_proposals; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.dao_proposals (id, title, description, created_by_user_id, status, created_at, approved_by_admin_id, voting_start, voting_end) FROM stdin;
+b95b4150-8d3d-413e-9518-e2162fbbdb72	TESTE DE PROPOSA	TESTEDESC	saulolsc@gmail.com	VOTING	2026-02-06 22:03:11.523514+00	master@hktech.com.br	2026-02-06 22:08:01.05469+00	\N
+\.
+
+
+--
+-- Data for Name: dao_votes; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.dao_votes (id, proposal_id, user_id, mybot_id, vote, amount_bet, created_at) FROM stdin;
+03821309-8567-4110-a6b4-b66ac2045da8	b95b4150-8d3d-413e-9518-e2162fbbdb72	saulolsc@gmail.com	7e4f39b4-b629-4cc7-a61c-04b716d801ee	YES	1000.00	2026-02-06 22:08:33.967983+00
+\.
+
+
+--
+-- Data for Name: deposit_accounts; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.deposit_accounts (id, user_id, cpf, balance, currency, created_at, updated_at) FROM stdin;
+890a69e1-4762-478b-b95e-bd2e18fcc38f	saulolsc@gmail.com		0.00	BRL	2026-01-30 03:37:03.716091+00	2026-01-30 03:37:03.716091+00
+080269cb-7279-468f-b2de-62eafa6d9816	master@hktech.com.br		0.00	BRL	2026-01-30 04:01:05.159971+00	2026-01-30 04:01:05.159971+00
+\.
+
+
+--
+-- Data for Name: deposit_transactions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.deposit_transactions (id, account_id, method, amount, status, reference, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: fund_holdings; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.fund_holdings (id, fund_id, asset_id, weight, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: funds; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.funds (id, name, description, management_fee, nav, created_at) FROM stdin;
+7c29c627-dccb-40af-9b6b-73f716f0dc5f	SPE Multiativos Simulado	Fundo simulado com foco em imóveis, tecnologia e ações.	1.50	1000000.00	2026-01-30 02:14:21.905325+00
+\.
+
+
+--
+-- Data for Name: ia_agents; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ia_agents (id, name, description, specialty, system_prompt, autonomy_level, is_active, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: ia_contexts; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ia_contexts (id, title, content, context_type, related_agent_id, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: ia_conversations; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ia_conversations (id, title, created_at, updated_at) FROM stdin;
+14993eab-b728-42b6-980d-8eb837e34ab7		2026-02-12 16:58:24.66702+00	2026-02-12 16:58:24.66702+00
+\.
+
+
+--
+-- Data for Name: ia_memory; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ia_memory (id, content, embedding, context_type, related_task_id, created_at, prompt_id, source_type, source_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: ia_messages; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ia_messages (id, conversation_id, role, content, created_at) FROM stdin;
+928629f2-4b9e-41fc-b5cd-55dea923ebfe	14993eab-b728-42b6-980d-8eb837e34ab7	user	Ola	2026-02-12 16:58:30.722591+00
+\.
+
+
+--
+-- Data for Name: ia_orchestrator_executions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ia_orchestrator_executions (id, orchestrator_id, version, steps_executed, agents_used, memory_retrieved_count, token_usage, execution_time, status, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: ia_orchestrators; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ia_orchestrators (id, name, execution_flow, is_active, version, created_at, updated_at, storage_url) FROM stdin;
+95178601-cb4c-4072-95cc-6e6d8923ad27	HKTECH Supreme Orchestrator v1	["load_orchestrator", "validate_system_config", "load_contexts", "retrieve_vector_memory", "validate_authority_flags", "create_or_update_ia_task", "execute_agent", "generate_ai_report", "store_memory"]	t	1	2026-02-12 18:24:09.282441+00	2026-02-12 18:24:09.282441+00	gs://counter-485621.appspot.com/ia/orchestrators/hktech-supreme-orchestrator-v1.v1.md
+\.
+
+
+--
+-- Data for Name: ia_prompt_versions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ia_prompt_versions (id, prompt_id, version, storage_url, created_at) FROM stdin;
+6e5fcd52-4297-4d44-b639-3712027fc5ff	54f556f6-40cd-4cbb-9155-0d8ab20c642d	1	gs://counter-485621.appspot.com/ia/prompts/bootstrap/hktech.ai.project.bootstrap.prompt.v1.md	2026-02-12 16:46:17.71457+00
+8ff0bd2a-0f4e-44ce-b047-b20c9a94ded3	c8631375-807d-4d0d-a977-5c73ce980266	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.ai.project.manager.prompt.v1.md	2026-02-12 16:46:18.802663+00
+037e9ba9-3e94-4cbe-b027-6218b13f5010	cb2941b2-2a5a-4fd2-b8da-735034f2e54d	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.ai.task.execution.prompt.v1.md	2026-02-12 16:46:19.7745+00
+cc7cc784-0704-4b2f-a07f-fed14b8eb3f8	3326d520-640a-429f-8fa7-ebb24ef41ed6	1	gs://counter-485621.appspot.com/ia/prompts/workflow/hktech.ai.workflow.v1.md	2026-02-12 16:46:20.738474+00
+85e5dede-0ccf-4bb0-873b-58ebdc61c660	36bf9944-b58d-4924-abaa-0b2397a057dc	1	gs://counter-485621.appspot.com/ia/prompts/architecture/hktech.architecture.action-plan.v1.md	2026-02-12 16:46:21.698471+00
+b4f3ec28-1364-4078-a9fb-6dec0dfd08cf	04884904-4189-43c0-8ca9-90847c9ebe65	1	gs://counter-485621.appspot.com/ia/prompts/architecture/hktech.architecture.decisions.v1.md	2026-02-12 16:46:22.650483+00
+511c07a3-b250-44ee-a009-d54a79c5b6e9	c582cf0d-4b06-46c1-bc8f-8fc055771ca0	1	gs://counter-485621.appspot.com/ia/prompts/bootstrap/hktech.backlog.bootstrap.prompt.v1.md	2026-02-12 16:46:23.594499+00
+48fa4c02-0ff8-4002-bf3a-70409bcfaef5	73c8574c-fcde-4173-b428-42676a598662	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.definition.of.done.v1.md	2026-02-12 16:46:24.55047+00
+e0b80fde-d834-46fd-a136-6c03c324e2e4	3b0e8335-3acb-4046-a8c3-71929f2683f5	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.domain.api.stabilization.v1.md	2026-02-12 16:46:25.498559+00
+66ddab4d-59be-4412-b12b-a8197ce43bb7	d8526bea-4d1e-4011-8a55-9daf4ec412b9	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.engineering.guidelines.v1.md	2026-02-12 16:46:26.442464+00
+b8705d0c-8d1d-43b2-a4b9-be8b1b18f41c	f8039efd-d51f-4a2f-b60a-8abbe399edec	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.event.driven.learning.v1.md	2026-02-12 16:46:27.398491+00
+ccf81988-40b7-456f-a121-095a9c6c60af	4f249b4f-cbf4-4ec4-b8a2-60ade988f4a0	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.implementation.status.v1.md	2026-02-12 16:46:28.33042+00
+baed1abf-40d5-4f9e-ab93-5756540279a1	36ce7e9c-76fe-45a7-8e5e-bd23c9b9fef6	1	gs://counter-485621.appspot.com/ia/prompts/mybot/hktech.mybot.memory.governance.v1.md	2026-02-12 16:46:29.274503+00
+241cf1b4-74d0-4d5a-9bdd-10f2d21f1db4	2d3e9d1f-745f-4404-9969-a3b2a6412de8	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.observability.metrics.v1.md	2026-02-12 16:46:30.230495+00
+a507167c-f3f0-4e8e-a2da-3088a3f42ae5	1cac7b03-cae6-4899-9a36-77fa9478df1f	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.pr.review.prompt.v1.md	2026-02-12 16:46:31.178475+00
+00a112de-e14f-4924-9a4b-4001833d644a	86b1a0e5-fd88-4cb8-ae69-7cad10cc5fce	1	gs://counter-485621.appspot.com/ia/prompts/orchestrator/hktech.prompt.orchestrator.v1.md	2026-02-12 16:46:32.1465+00
+3f7803ed-e97a-4732-92af-858f9d98e332	2adf9a67-da7b-4673-92b5-b63504fa418b	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.scalability.preparation.v1.md	2026-02-12 16:46:33.10251+00
+371c60e8-70e0-4f00-97bd-5e6f9398aa76	f0ff0a7f-8b1d-4ce9-a845-98f4f897a1ab	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.scope.boundaries.v1.md	2026-02-12 16:46:34.050468+00
+c7de284a-aa06-4f61-8b1f-3db77e1d5912	4af20c5e-cf94-4ac0-82b3-f87df60d2176	1	gs://counter-485621.appspot.com/ia/prompts/security/hktech.security.isolation.review.v1.md	2026-02-12 16:46:35.002408+00
+c7da2c57-95b2-45c2-87cf-55eb7ce72e48	88eab5e1-686e-4b6b-9401-a5b830890b0d	1	gs://counter-485621.appspot.com/ia/prompts/system/hktech.system.context.prompt.v1.md	2026-02-12 16:46:35.982574+00
+557fa351-ca16-48b6-a00c-f571ca4c5563	9b3e020e-ce14-4427-b222-5b8ceac83c81	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.system.description.prompt.v1.md	2026-02-12 16:46:36.930458+00
+807e6078-a022-46ef-b398-8442342ba3d6	a2667d98-a314-48a4-8f71-579cbf74da59	1	gs://counter-485621.appspot.com/ia/prompts/governance/hktech.system.execution.prompt.v1.md	2026-02-12 16:46:37.886539+00
+b8a79050-e8c0-4974-a8d6-e9ebeb5f6507	6f3a5621-8d3e-487a-9712-2723e66c47ff	1	gs://counter-485621.appspot.com/ia/prompts/mybot/mybot.domain.prompt.v1.md	2026-02-12 16:46:38.838468+00
+bfbf04a2-ee99-4288-866e-8ee9bf5b0ea9	735e8aae-fc45-444c-aa9f-27b8c9294baa	1	gs://counter-485621.appspot.com/ia/prompts/governance/README.v1.md	2026-02-12 16:46:40.204466+00
+\.
+
+
+--
+-- Data for Name: ia_prompts; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ia_prompts (id, title, file_name, category, description, storage_url, is_active, version, created_at, updated_at) FROM stdin;
+54f556f6-40cd-4cbb-9155-0d8ab20c642d	Hktech Ai Project Bootstrap Prompt	hktech.ai.project.bootstrap.prompt.md	bootstrap		gs://counter-485621.appspot.com/ia/prompts/bootstrap/hktech.ai.project.bootstrap.prompt.v1.md	t	1	2026-02-12 16:46:17.554704+00	2026-02-12 16:46:17.554704+00
+c8631375-807d-4d0d-a977-5c73ce980266	Hktech Ai Project Manager Prompt	hktech.ai.project.manager.prompt.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.ai.project.manager.prompt.v1.md	t	1	2026-02-12 16:46:18.650498+00	2026-02-12 16:46:18.650498+00
+cb2941b2-2a5a-4fd2-b8da-735034f2e54d	Hktech Ai Task Execution Prompt	hktech.ai.task.execution.prompt.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.ai.task.execution.prompt.v1.md	t	1	2026-02-12 16:46:19.618491+00	2026-02-12 16:46:19.618491+00
+3326d520-640a-429f-8fa7-ebb24ef41ed6	Hktech Ai Workflow	hktech.ai.workflow.md	workflow		gs://counter-485621.appspot.com/ia/prompts/workflow/hktech.ai.workflow.v1.md	t	1	2026-02-12 16:46:20.582439+00	2026-02-12 16:46:20.582439+00
+36bf9944-b58d-4924-abaa-0b2397a057dc	Hktech Architecture Action Plan	hktech.architecture.action-plan.md	architecture		gs://counter-485621.appspot.com/ia/prompts/architecture/hktech.architecture.action-plan.v1.md	t	1	2026-02-12 16:46:21.542499+00	2026-02-12 16:46:21.542499+00
+04884904-4189-43c0-8ca9-90847c9ebe65	Hktech Architecture Decisions	hktech.architecture.decisions.md	architecture		gs://counter-485621.appspot.com/ia/prompts/architecture/hktech.architecture.decisions.v1.md	t	1	2026-02-12 16:46:22.498489+00	2026-02-12 16:46:22.498489+00
+c582cf0d-4b06-46c1-bc8f-8fc055771ca0	Hktech Backlog Bootstrap Prompt	hktech.backlog.bootstrap.prompt.md	bootstrap		gs://counter-485621.appspot.com/ia/prompts/bootstrap/hktech.backlog.bootstrap.prompt.v1.md	t	1	2026-02-12 16:46:23.442505+00	2026-02-12 16:46:23.442505+00
+73c8574c-fcde-4173-b428-42676a598662	Hktech Definition Of Done	hktech.definition.of.done.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.definition.of.done.v1.md	t	1	2026-02-12 16:46:24.39843+00	2026-02-12 16:46:24.39843+00
+3b0e8335-3acb-4046-a8c3-71929f2683f5	Hktech Domain Api Stabilization	hktech.domain.api.stabilization.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.domain.api.stabilization.v1.md	t	1	2026-02-12 16:46:25.34252+00	2026-02-12 16:46:25.34252+00
+d8526bea-4d1e-4011-8a55-9daf4ec412b9	Hktech Engineering Guidelines	hktech.engineering.guidelines.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.engineering.guidelines.v1.md	t	1	2026-02-12 16:46:26.286464+00	2026-02-12 16:46:26.286464+00
+f8039efd-d51f-4a2f-b60a-8abbe399edec	Hktech Event Driven Learning	hktech.event.driven.learning.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.event.driven.learning.v1.md	t	1	2026-02-12 16:46:27.242473+00	2026-02-12 16:46:27.242473+00
+4f249b4f-cbf4-4ec4-b8a2-60ade988f4a0	Hktech Implementation Status	hktech.implementation.status.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.implementation.status.v1.md	t	1	2026-02-12 16:46:28.17849+00	2026-02-12 16:46:28.17849+00
+36ce7e9c-76fe-45a7-8e5e-bd23c9b9fef6	Hktech Mybot Memory Governance	hktech.mybot.memory.governance.md	mybot		gs://counter-485621.appspot.com/ia/prompts/mybot/hktech.mybot.memory.governance.v1.md	t	1	2026-02-12 16:46:29.118538+00	2026-02-12 16:46:29.118538+00
+2d3e9d1f-745f-4404-9969-a3b2a6412de8	Hktech Observability Metrics	hktech.observability.metrics.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.observability.metrics.v1.md	t	1	2026-02-12 16:46:30.078484+00	2026-02-12 16:46:30.078484+00
+1cac7b03-cae6-4899-9a36-77fa9478df1f	Hktech Pr Review Prompt	hktech.pr.review.prompt.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.pr.review.prompt.v1.md	t	1	2026-02-12 16:46:31.022598+00	2026-02-12 16:46:31.022598+00
+86b1a0e5-fd88-4cb8-ae69-7cad10cc5fce	Hktech Prompt Orchestrator	hktech.prompt.orchestrator.md	orchestrator		gs://counter-485621.appspot.com/ia/prompts/orchestrator/hktech.prompt.orchestrator.v1.md	t	1	2026-02-12 16:46:31.986557+00	2026-02-12 16:46:31.986557+00
+2adf9a67-da7b-4673-92b5-b63504fa418b	Hktech Scalability Preparation	hktech.scalability.preparation.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.scalability.preparation.v1.md	t	1	2026-02-12 16:46:32.946515+00	2026-02-12 16:46:32.946515+00
+f0ff0a7f-8b1d-4ce9-a845-98f4f897a1ab	Hktech Scope Boundaries	hktech.scope.boundaries.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.scope.boundaries.v1.md	t	1	2026-02-12 16:46:33.898448+00	2026-02-12 16:46:33.898448+00
+4af20c5e-cf94-4ac0-82b3-f87df60d2176	Hktech Security Isolation Review	hktech.security.isolation.review.md	security		gs://counter-485621.appspot.com/ia/prompts/security/hktech.security.isolation.review.v1.md	t	1	2026-02-12 16:46:34.846588+00	2026-02-12 16:46:34.846588+00
+88eab5e1-686e-4b6b-9401-a5b830890b0d	Hktech System Context Prompt	hktech.system.context.prompt.md	system		gs://counter-485621.appspot.com/ia/prompts/system/hktech.system.context.prompt.v1.md	t	1	2026-02-12 16:46:35.826609+00	2026-02-12 16:46:35.826609+00
+9b3e020e-ce14-4427-b222-5b8ceac83c81	Hktech System Description Prompt	hktech.system.description.prompt.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.system.description.prompt.v1.md	t	1	2026-02-12 16:46:36.778484+00	2026-02-12 16:46:36.778484+00
+a2667d98-a314-48a4-8f71-579cbf74da59	Hktech System Execution Prompt	hktech.system.execution.prompt.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/hktech.system.execution.prompt.v1.md	t	1	2026-02-12 16:46:37.734473+00	2026-02-12 16:46:37.734473+00
+6f3a5621-8d3e-487a-9712-2723e66c47ff	Mybot Domain Prompt	mybot.domain.prompt.md	mybot		gs://counter-485621.appspot.com/ia/prompts/mybot/mybot.domain.prompt.v1.md	t	1	2026-02-12 16:46:38.686425+00	2026-02-12 16:46:38.686425+00
+735e8aae-fc45-444c-aa9f-27b8c9294baa	README	README.md	governance		gs://counter-485621.appspot.com/ia/prompts/governance/README.v1.md	t	1	2026-02-12 16:46:40.04865+00	2026-02-12 16:46:40.04865+00
+\.
+
+
+--
+-- Data for Name: internal_accounts; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.internal_accounts (user_id, balance, updated_at) FROM stdin;
+gusmaokamila2@gmail.com	0.00	2026-01-30 17:32:40.793564+00
+vic.candeira.araujo@gmail.com	0.00	2026-02-04 22:05:39.384888+00
+pxycoelho@gmail.com	0.00	2026-02-06 17:09:16.100784+00
+igormattar8@gmail.com	0.00	2026-02-07 14:20:38.669017+00
+master@hktech.com.br	10.00	2026-02-07 19:38:18.685375+00
+saulolsc@gmail.com	10.00	2026-02-07 19:38:18.685375+00
+hktech_master	39999962.00	2026-02-07 19:38:18.685375+00
+\.
+
+
+--
+-- Data for Name: internal_transactions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.internal_transactions (id, from_user_id, to_user_id, amount, reason, created_at) FROM stdin;
+eefae0da-fb70-4b62-bd33-076d3397eb93	hktech_master	saulolsc@gmail.com	20.00	hkcoin_bootstrap	2026-02-07 19:28:30.388784+00
+9a20d606-da18-4510-92d3-52b9df437d6d	hktech_master	master@hktech.com.br	20.00	hkcoin_bootstrap	2026-02-07 19:29:19.296159+00
+c2354483-96ac-4de7-9f33-150eb7e0fb7a	master@hktech.com.br	hktech_master	10.00	mybot_battle_pool	2026-02-07 19:38:18.685375+00
+8f240c7f-2814-4053-86e5-6cd3e08040f7	saulolsc@gmail.com	hktech_master	10.00	mybot_battle_pool	2026-02-07 19:38:18.685375+00
+c7888016-a466-4f11-ae74-3db4ef86715d	hktech_master	master@hktech.com.br	18.00	mybot_battle_payout	2026-02-07 19:38:18.685375+00
+\.
+
+
+--
+-- Data for Name: llm_telemetry; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.llm_telemetry (id, user_id, agent, model, provider, endpoint, prompt_tokens, completion_tokens, total_tokens, cost_usd, status, source, latency_ms, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: mybot_activations; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_activations (id, user_id, cpf_hash, deposit_tx_id, credits_granted, created_at) FROM stdin;
+65ead7e2-fbfd-4bfe-860d-f44fa41c737e	master@hktech.com.br	4b6af5b9f29c0d0e468d6764fe6a36bd4bcf8241e1fa765602040670cca73064	\N	0.00	2026-02-07 19:37:58.557561+00
+\.
+
+
+--
+-- Data for Name: mybot_battle_queue; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_battle_queue (id, user_id, card_id, bet_amount, level, rarity, rarity_rank, status, matched_battle_id, created_at) FROM stdin;
+932ac00f-9d54-41f5-ae2a-92196a8cb1d6	saulolsc@gmail.com	7e4f39b4-b629-4cc7-a61c-04b716d801ee	10.00	1	comum	0	matched	b290eab9-6f10-4025-8fb3-0c3a1cc2e7f9	2026-02-07 19:28:40.378986+00
+845eaa52-9074-4a3d-a565-e997403bc481	master@hktech.com.br	c9fccaa5-4f40-478d-a74a-2be8191fddfd	10.00	1	comum	0	waiting	\N	2026-02-07 19:43:12.347204+00
+\.
+
+
+--
+-- Data for Name: mybot_battles; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_battles (id, user_id_a, user_id_b, card_id_a, card_id_b, bet_amount, battle_type, gas_pct, map_name, map_weights, seed, power_a, power_b, power_final_a, power_final_b, winner_user_id, payout_amount, gas_amount, status, created_at, modifiers, random_factor_a, random_factor_b, xp_a, xp_b, reason) FROM stdin;
+b290eab9-6f10-4025-8fb3-0c3a1cc2e7f9	master@hktech.com.br	saulolsc@gmail.com	c9fccaa5-4f40-478d-a74a-2be8191fddfd	7e4f39b4-b629-4cc7-a61c-04b716d801ee	10.00	ranqueada	0.1000	Floresta	{"speed": 1.3, "strength": 0.9, "intelligence": 1.1}	00f8cfea7b8eaa3757fdb2edda9b04b846fcfc4da8e5aeff4b194d256d00524d	185.5000	177.2000	180.8234	164.4556	master@hktech.com.br	18.00	2.00	resolved	2026-02-07 19:38:18.685375+00	[]	1.0000	1.0000	0	0	
+\.
+
+
+--
+-- Data for Name: mybot_bets; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_bets (id, user_id, card_id, battle_id, bet_amount, possible_return, gas_amount, status, created_at, finalized_at, redeemed_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: mybot_cpf_registry; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_cpf_registry (cpf_hash, user_id, created_at) FROM stdin;
+4b6af5b9f29c0d0e468d6764fe6a36bd4bcf8241e1fa765602040670cca73064	master@hktech.com.br	2026-02-07 19:37:58.557561+00
+\.
+
+
+--
+-- Data for Name: mybot_events; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_events (id, user_id, event_type, source, payload, reversible, occurred_at, created_at, reverted_at, correlation_id, version) FROM stdin;
+5413dd64-0d5c-4466-be31-ce2d09bad71f	saulolsc@gmail.com	user_message	user	{"context": null, "message": "Ola"}	f	2026-01-31 17:29:57.770439+00	2026-01-31 17:29:57.770439+00	\N		1
+b1b016d8-c67a-4b51-a661-079a294ed5ae	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-01-31 17:29:57.770439+00	2026-01-31 17:29:57.770439+00	\N		1
+a19898ae-9ca6-4871-aba9-a7a2c9d75d1e	saulolsc@gmail.com	user_message	user	{"context": null, "message": "sim"}	f	2026-01-31 17:30:09.922653+00	2026-01-31 17:30:09.922653+00	\N		1
+e4b7d7c4-471e-467f-99e5-74dde5865bb4	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-01-31 17:30:09.922653+00	2026-01-31 17:30:09.922653+00	\N		1
+a8947f91-9768-486d-9e89-fd8e8aa44497	saulolsc@gmail.com	user_message	user	{"context": null, "message": "sim"}	f	2026-01-31 17:30:13.515291+00	2026-01-31 17:30:13.515291+00	\N		1
+cae34a0c-12c7-4b5e-a4e1-b7156282ebfa	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-01-31 17:30:13.515291+00	2026-01-31 17:30:13.515291+00	\N		1
+01388d9d-a826-4370-8209-298ef0d7daea	saulolsc@gmail.com	user_message	user	{"context": null, "message": "faça iso"}	f	2026-01-31 17:30:19.219487+00	2026-01-31 17:30:19.219487+00	\N		1
+f2059f5b-5b45-407a-be7a-38f08b068c13	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-01-31 17:30:19.219487+00	2026-01-31 17:30:19.219487+00	\N		1
+7014a570-fa8d-44b4-b530-6260baa21259	saulolsc@gmail.com	user_message	user	{"context": null, "message": "ola"}	f	2026-01-31 18:50:23.985384+00	2026-01-31 18:50:23.985384+00	\N		1
+b3118852-aca6-48c1-8f87-fba6c798df9f	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-01-31 18:50:23.985384+00	2026-01-31 18:50:23.985384+00	\N		1
+f0507a72-c685-4ddd-93c5-d3074e172756	saulolsc@gmail.com	user_message	user	{"context": null, "message": "ola"}	f	2026-02-01 17:49:59.675778+00	2026-02-01 17:49:59.675778+00	\N		1
+d1f23c7f-f0a0-432b-abe9-4a835d85514a	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-01 17:49:59.675778+00	2026-02-01 17:49:59.675778+00	\N		1
+f3d54be7-7376-405b-9c4a-99d029403567	saulolsc@gmail.com	user_message	user	{"context": null, "message": "sim"}	f	2026-02-01 17:50:02.941052+00	2026-02-01 17:50:02.941052+00	\N		1
+33dc69eb-b5eb-404e-a783-8a6b5534513a	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-01 17:50:02.941052+00	2026-02-01 17:50:02.941052+00	\N		1
+763802cc-7f47-46b1-8819-766a8bd672d3	saulolsc@gmail.com	user_message	user	{"context": null, "message": "oi"}	f	2026-02-01 17:53:08.796459+00	2026-02-01 17:53:08.796459+00	\N		1
+a64a0018-05b8-4fbf-99ba-1de5f4c6200b	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-01 17:53:08.796459+00	2026-02-01 17:53:08.796459+00	\N		1
+85e029fb-00d9-4ca9-9e0c-3756fddf62cb	saulolsc@gmail.com	user_message	user	{"context": null, "message": "sim"}	f	2026-02-01 17:53:11.535754+00	2026-02-01 17:53:11.535754+00	\N		1
+5ac4b134-d4f9-4933-9b1e-c93173589731	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-01 17:53:11.535754+00	2026-02-01 17:53:11.535754+00	\N		1
+2894c41f-dd5d-4502-9966-0830c5f0c6fd	saulolsc@gmail.com	user_message	user	{"context": null, "message": "oi"}	f	2026-02-01 18:09:05.397464+00	2026-02-01 18:09:05.397464+00	\N		1
+227468db-ea97-4945-94b9-56ac19d193b5	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-01 18:09:05.397464+00	2026-02-01 18:09:05.397464+00	\N		1
+7c255720-34f0-4f19-a021-065582e12adb	saulolsc@gmail.com	user_message	user	{"context": null, "message": "sim"}	f	2026-02-01 18:09:09.788205+00	2026-02-01 18:09:09.788205+00	\N		1
+f621d29b-a06f-4b81-8da5-a3e43596c9a8	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-01 18:09:09.788205+00	2026-02-01 18:09:09.788205+00	\N		1
+59697782-bada-4b11-8d4c-41149472ba80	saulolsc@gmail.com	user_message	user	{"context": null, "message": "oi"}	f	2026-02-01 18:48:19.953748+00	2026-02-01 18:48:19.953748+00	\N		1
+0a06f7ce-2e4c-4efd-b275-9bd134b3d56b	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-01 18:48:19.953748+00	2026-02-01 18:48:19.953748+00	\N		1
+7ed892c6-aab8-4323-9622-0ffd210a05b2	saulolsc@gmail.com	user_message	user	{"context": null, "message": "sim"}	f	2026-02-01 18:48:25.969378+00	2026-02-01 18:48:25.969378+00	\N		1
+021e5ead-4517-4eb6-acca-bff03b197005	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-01 18:48:25.969378+00	2026-02-01 18:48:25.969378+00	\N		1
+14d40ce2-b5d9-4eca-836a-8b42611b796f	saulolsc@gmail.com	user_message	user	{"context": null, "message": "oi"}	f	2026-02-01 19:06:04.371162+00	2026-02-01 19:06:04.371162+00	\N		1
+291e6a91-4bfe-4e37-b497-fc803f3a7e93	saulolsc@gmail.com	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-01 19:06:04.371162+00	2026-02-01 19:06:04.371162+00	\N		1
+5e58f88e-885a-431a-8504-0127ab2b8c7b	master@hktech.com.br	user_message	user	{"context": null, "message": "OI"}	f	2026-02-07 14:41:11.660438+00	2026-02-07 14:41:11.660438+00	\N		1
+2e02fdac-c443-49c2-bc4e-d4c34a381b63	master@hktech.com.br	mybot_response	system	{"response": "Meu papel agora: Assistente. Posso explicar o passo a passo e sugerir próximos movimentos dentro da plataforma. Quer que eu organize um plano curto ou uma explicação detalhada?"}	f	2026-02-07 14:41:11.660438+00	2026-02-07 14:41:11.660438+00	\N		1
+\.
+
+
+--
+-- Data for Name: mybot_evolutions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_evolutions (id, user_id, card_id, attribute, before_value, after_value, cost, points_spent, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: mybot_maps; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_maps (id, name, position_x, position_y, icon, visual_meta, created_at, updated_at) FROM stdin;
+Arena Classica	Arena Clássica	50.00	10.00	⚔️	{}	2026-02-07 21:21:31.770956+00	2026-02-11 21:33:40.275569+00
+Floresta	Floresta	20.00	38.00	🌲	{}	2026-02-07 21:21:31.773757+00	2026-02-11 21:33:40.280263+00
+Deserto	Deserto	80.00	38.00	🏜️	{}	2026-02-07 21:21:31.775981+00	2026-02-11 21:33:40.283818+00
+Cidade em Ruinas	Cidade em Ruínas	80.00	74.00	🏚️	{}	2026-02-07 21:21:31.778315+00	2026-02-11 21:33:40.28698+00
+Arena Tecnologica	Arena Tecnológica	20.00	74.00	🛰️	{}	2026-02-07 21:21:31.780805+00	2026-02-11 21:33:40.290732+00
+\.
+
+
+--
+-- Data for Name: mybot_memory; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_memory (id, user_id, layer, memory_key, value, version, is_active, last_event_id, created_at, updated_at) FROM stdin;
+693fcc2c-6b63-4165-936a-b6650b1026ca	saulolsc@gmail.com	short	last_user_message	{"message": "Ola", "receivedAt": "2026-01-31T17:29:57.837Z"}	1	f	5413dd64-0d5c-4466-be31-ce2d09bad71f	2026-01-31 17:29:57.770439+00	2026-01-31 17:30:09.922653+00
+19167d3a-ff5b-4f3f-b0a8-be486355f01e	saulolsc@gmail.com	short	last_user_message	{"message": "sim", "receivedAt": "2026-01-31T17:30:09.966Z"}	2	f	a19898ae-9ca6-4871-aba9-a7a2c9d75d1e	2026-01-31 17:30:09.922653+00	2026-01-31 17:30:13.515291+00
+b8546110-5fb9-45c0-a766-3eb2e02412ba	saulolsc@gmail.com	short	last_user_message	{"message": "sim", "receivedAt": "2026-01-31T17:30:13.578Z"}	3	f	a8947f91-9768-486d-9e89-fd8e8aa44497	2026-01-31 17:30:13.515291+00	2026-01-31 17:30:19.219487+00
+867ccb24-5980-44d3-afce-071e546e969f	saulolsc@gmail.com	short	last_user_message	{"message": "faça iso", "receivedAt": "2026-01-31T17:30:19.267Z"}	4	f	01388d9d-a826-4370-8209-298ef0d7daea	2026-01-31 17:30:19.219487+00	2026-01-31 18:50:23.985384+00
+fdc89e91-a0fa-405f-ace0-eb656e1c87c8	saulolsc@gmail.com	short	last_user_message	{"message": "ola", "receivedAt": "2026-01-31T18:50:24.044Z"}	5	f	7014a570-fa8d-44b4-b530-6260baa21259	2026-01-31 18:50:23.985384+00	2026-02-01 17:49:59.675778+00
+95626420-3391-4432-9922-f4f67bb90d59	saulolsc@gmail.com	short	last_user_message	{"message": "ola", "receivedAt": "2026-02-01T17:49:59.730Z"}	6	f	f0507a72-c685-4ddd-93c5-d3074e172756	2026-02-01 17:49:59.675778+00	2026-02-01 17:50:02.941052+00
+6ec87403-cfda-4801-9c42-58ccfd2328b8	saulolsc@gmail.com	short	last_user_message	{"message": "sim", "receivedAt": "2026-02-01T17:50:02.987Z"}	7	f	f3d54be7-7376-405b-9c4a-99d029403567	2026-02-01 17:50:02.941052+00	2026-02-01 17:53:08.796459+00
+daa04916-654b-41d8-8a55-9ef2fe7aff9f	saulolsc@gmail.com	short	last_user_message	{"message": "oi", "receivedAt": "2026-02-01T17:53:08.860Z"}	8	f	763802cc-7f47-46b1-8819-766a8bd672d3	2026-02-01 17:53:08.796459+00	2026-02-01 17:53:11.535754+00
+c18b6968-d741-48f8-bc39-3f1a9aabf7b1	saulolsc@gmail.com	short	last_user_message	{"message": "sim", "receivedAt": "2026-02-01T17:53:11.591Z"}	9	f	85e029fb-00d9-4ca9-9e0c-3756fddf62cb	2026-02-01 17:53:11.535754+00	2026-02-01 18:09:05.397464+00
+39f73b0d-9328-4cc4-96d2-f89f0a73832e	saulolsc@gmail.com	short	last_user_message	{"message": "oi", "receivedAt": "2026-02-01T18:09:05.441Z"}	10	f	2894c41f-dd5d-4502-9966-0830c5f0c6fd	2026-02-01 18:09:05.397464+00	2026-02-01 18:09:09.788205+00
+3d805128-57e4-41d7-969c-10cebbc68eaa	saulolsc@gmail.com	short	last_user_message	{"message": "sim", "receivedAt": "2026-02-01T18:09:09.830Z"}	11	f	7c255720-34f0-4f19-a021-065582e12adb	2026-02-01 18:09:09.788205+00	2026-02-01 18:48:19.953748+00
+3463da19-9514-4b83-89f5-471ac6d8fbcf	saulolsc@gmail.com	short	last_user_message	{"message": "oi", "receivedAt": "2026-02-01T18:48:20.003Z"}	12	f	59697782-bada-4b11-8d4c-41149472ba80	2026-02-01 18:48:19.953748+00	2026-02-01 18:48:25.969378+00
+59ce01d6-ca21-4c39-afc7-8999cc4291ee	saulolsc@gmail.com	short	last_user_message	{"message": "sim", "receivedAt": "2026-02-01T18:48:26.016Z"}	13	f	7ed892c6-aab8-4323-9622-0ffd210a05b2	2026-02-01 18:48:25.969378+00	2026-02-01 19:06:04.371162+00
+ffd31541-66b3-4bc5-8e08-a5423da6dac0	saulolsc@gmail.com	short	last_user_message	{"message": "oi", "receivedAt": "2026-02-01T19:06:04.432Z"}	14	t	14d40ce2-b5d9-4eca-836a-8b42611b796f	2026-02-01 19:06:04.371162+00	2026-02-01 19:06:04.371162+00
+193d255e-d1ec-4455-bfac-6486b370d01e	master@hktech.com.br	short	last_user_message	{"message": "OI", "receivedAt": "2026-02-07T14:41:11.743Z"}	1	t	5e58f88e-885a-431a-8504-0127ab2b8c7b	2026-02-07 14:41:11.660438+00	2026-02-07 14:41:11.660438+00
+\.
+
+
+--
+-- Data for Name: mybot_movements; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_movements (id, bot_id, user_id, from_map_id, to_map_id, reason, battle_id, created_at) FROM stdin;
+524e4e85-7ebd-415e-9b0a-1bb310235a41	7e4f39b4-b629-4cc7-a61c-04b716d801ee	saulolsc@gmail.com	\N	Arena Classica	origin_assigned	\N	2026-02-07 21:21:32.00106+00
+f9dee4b7-8776-4c3d-be4f-31a41e1b302f	c9fccaa5-4f40-478d-a74a-2be8191fddfd	master@hktech.com.br	\N	Arena Classica	origin_assigned	\N	2026-02-07 21:21:32.250786+00
+\.
+
+
+--
+-- Data for Name: mybot_profiles; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_profiles (user_id, card_id, available_points, loss_streak, high_bet_streak, last_high_bet_at, last_battle_at, created_at, updated_at, origin_map_id, current_map_id, origin_pos_x, origin_pos_y, current_pos_x, current_pos_y, last_movement_at) FROM stdin;
+saulolsc@gmail.com	7e4f39b4-b629-4cc7-a61c-04b716d801ee	0	1	0	\N	2026-02-07 19:38:18.794+00	2026-02-07 19:28:40.378986+00	2026-02-07 21:21:31.997721+00	Arena Classica	Arena Classica	22.55	56.75	22.55	56.75	\N
+master@hktech.com.br	c9fccaa5-4f40-478d-a74a-2be8191fddfd	0	0	0	\N	2026-02-07 19:38:18.794+00	2026-02-07 19:38:18.685375+00	2026-02-07 21:21:32.247842+00	Arena Classica	Arena Classica	46.39	13.14	46.39	13.14	\N
+igormattar8@gmail.com	7d29ea9f-6788-405c-b411-72f977dafc5f	0	0	0	\N	\N	2026-02-11 21:08:38.682282+00	2026-02-11 21:08:38.682282+00	Deserto	Deserto	84.04	51.41	84.04	51.41	\N
+gusmaokamila2@gmail.com	edcb2ff0-7e41-4db5-b9b2-0cff1bb12f96	0	0	0	\N	\N	2026-02-11 21:08:38.867809+00	2026-02-11 21:08:38.867809+00	Deserto	Deserto	57.69	47.02	57.69	47.02	\N
+pxycoelho@gmail.com	b3719445-3717-43ad-9557-b3ac1a41b99a	0	0	0	\N	\N	2026-02-11 21:08:39.075337+00	2026-02-11 21:08:39.075337+00	Floresta	Floresta	85.92	39.80	85.92	39.80	\N
+vic.candeira.araujo@gmail.com	2ee35044-0a5f-4d21-b1af-88f3dc10525f	0	0	0	\N	\N	2026-02-11 21:08:39.275395+00	2026-02-11 21:08:39.275395+00	Arena Tecnologica	Arena Tecnologica	44.51	79.65	44.51	79.65	\N
+\.
+
+
+--
+-- Data for Name: mybot_stats; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybot_stats (user_id, content_accessed_count, projects_purchased_count, projects_created_count, courses_started_count, courses_completed_count, marketplace_interactions_count, tool_usage_count, feedback_score, last_event_at) FROM stdin;
+saulolsc@gmail.com	0	0	0	0	0	0	0	0	2026-01-31 17:29:57.770439+00
+master@hktech.com.br	0	0	0	0	0	0	0	0	2026-02-07 14:41:11.660438+00
+ecosystem	0	0	0	0	0	0	0	0	2026-02-07 21:33:35.71429+00
+\.
+
+
+--
+-- Data for Name: mybots; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.mybots (user_id, myalien_user_id, stage, stage_reason, created_at, updated_at, image_url) FROM stdin;
+saulolsc@gmail.com	saulolsc@gmail.com	assistant		2026-01-31 17:29:53.006723+00	2026-01-31 17:29:53.006723+00	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fsaulolsc%40gmail.com-f927c3b7f8fc.svg?v=1770249383994
+vic.candeira.araujo@gmail.com	vic.candeira.araujo@gmail.com	assistant		2026-02-04 22:05:39.451332+00	2026-02-04 22:05:39.451332+00	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fvic.candeira.araujo%40gmail.com-a3f3bf0bd466.svg?v=1770242770105
+pxycoelho@gmail.com	pxycoelho@gmail.com	assistant		2026-02-06 17:09:16.11815+00	2026-02-06 17:09:16.11815+00	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fpxycoelho%40gmail.com-b7b45f061c84.svg?v=1770400311533
+igormattar8@gmail.com	igormattar8@gmail.com	assistant		2026-02-07 14:20:38.720719+00	2026-02-07 14:20:38.720719+00	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Figormattar8%40gmail.com-747fc2fa9ebb.svg?v=1770474080527
+gusmaokamila2@gmail.com	gusmaokamila2@gmail.com	assistant		2026-02-06 18:32:38.062189+00	2026-02-06 18:32:38.062189+00	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fgusmaokamila2%40gmail.com-7e3b0a4fee94.svg?v=1770402759311
+master@hktech.com.br	master@hktech.com.br	assistant		2026-01-31 22:47:34.183686+00	2026-01-31 22:47:34.183686+00	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fmaster%40hktech.com.br-4b6af5b9f29c.svg?v=1770493556961
+ecosystem	ecosystem	assistant		2026-02-07 21:33:35.613528+00	2026-02-07 21:33:35.613528+00	\N
+\.
+
+
+--
+-- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.orders (id, user_id, asset_id, order_type, price, quantity, status, created_at) FROM stdin;
+b968d6c5-d101-4b40-b9fe-775418463426	default	f046a6db-8de2-4caa-8706-035d0b927df7	buy	1.00	1.0000	open	2026-01-30 02:26:58.497299+00
+\.
+
+
+--
+-- Data for Name: price_history; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.price_history (id, asset_id, price, recorded_at) FROM stdin;
+fdf60598-da67-4ce4-b847-c584c7874fe3	f046a6db-8de2-4caa-8706-035d0b927df7	1.00	2026-01-30
+9c2182f4-3127-4773-8235-1ec8b6ff3260	f046a6db-8de2-4caa-8706-035d0b927df7	1.00	2026-02-06
+\.
+
+
+--
+-- Data for Name: product_types; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.product_types (id, label) FROM stdin;
+digital	Produto digital
+fisico	Produto físico
+servico	Serviço
+assinatura	Assinatura
+projeto	Projeto
+\.
+
+
+--
+-- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.products (id, name, price, description, created_at, show_on_home, purchase_price, sale_price, product_type, base_project_id, show_on_marketplace, template_id) FROM stdin;
+9e370eec-e6ed-474d-a040-a5f263e0062e	Landing Page Institucional	0,00	Landing page institucional pronta para publicação	2026-01-30 13:13:23.969351+00	t	0,00	0,00	digital	\N	t	\N
+7eda58b8-8cab-456c-839f-8a65b6e7dc02	Resistores e LEDs 100 peças	R$ 59,99	Componentes Eletrônicos - Componentes Eletrônicos	2026-01-28 01:33:46.947993+00	t		R$ 59,99	digital	\N	f	\N
+\.
+
+
+--
+-- Data for Name: project_tasks; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.project_tasks (id, project_id, title, description, status, "position", created_at, updated_at, generated_by_ai, domain, risk_level, pr_link, confidence_score, execution_result, origin, report_id, linked_agent_id, context_reference, execution_logs, specialist_type) FROM stdin;
+\.
+
+
+--
+-- Data for Name: projects; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.projects (id, name, description, repository, domain, hosting, status, paid, created_at, is_public, project_type, sale_price, production_cost, purchase_count, owner_user_id, managed_by_ai, task_creation_policy, allow_auto_backlog_if_empty, backlog_bootstrap, ai_autonomy_level, last_backlog_bootstrap_at, product_id, base_project_id, purchase_id, created_from_purchase, is_template, html_content, css_content, updated_at, version, template_id, template_version) FROM stdin;
+ec251b4c-4c98-47ea-a077-a9a75708566b	Holding Kapital Technology		Holding Kapital Technology	hktech.com.br	GitHub Pages	Ativo	t	2026-01-28 00:52:14.042499+00	f				0		t	AI_ALLOWED	t	t	CONTROLLED	\N	\N	\N	\N	f	t			2026-02-11 23:36:30.288038+00	2	ec251b4c-4c98-47ea-a077-a9a75708566b	2
+\.
+
+
+--
+-- Data for Name: purchases; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.purchases (id, user_id, product_id, price, status, created_at, project_id, purchase_type) FROM stdin;
+ae694d8d-ea52-412d-bbd5-41f6d308d15e	saulolsc@gmail.com	9e370eec-e6ed-474d-a040-a5f263e0062e	0.00	completed	2026-02-07 01:58:37.213556+00	\N	free
+a9b7a4d4-4eb2-4e14-bef7-371345f4b99e	master@hktech.com.br	9e370eec-e6ed-474d-a040-a5f263e0062e	0.00	completed	2026-02-07 02:41:25.849302+00	\N	free
+\.
+
+
+--
+-- Data for Name: sales; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.sales (id, customer_name, amount, currency, created_at) FROM stdin;
+3d060a52-9884-4811-a675-2dd56b74bb0f	Venda modelo	149.90	BRL	2026-01-29 21:40:13.585927+00
+\.
+
+
+--
+-- Data for Name: settings; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.settings (key, value) FROM stdin;
+master_email	master@hktech.com.br
+\.
+
+
+--
+-- Data for Name: system_config; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.system_config (id, key, value, created_at, updated_at) FROM stdin;
+25ea1e48-171a-4908-94e9-8c8854448a21	IA_CONFIG	{"managedByAI": true, "maxTasksPerRun": 5, "taskCreationPolicy": "AI_ALLOWED", "maxExecutionsPerHour": 2, "allowAutoBacklogIfEmpty": true}	2026-02-12 13:29:37.418966+00	2026-02-12 13:29:37.418966+00
+c443853c-e731-466b-8def-a3739d46edf3	IA_AUTHORITY_FLAGS	{"managedByAI": true, "taskCreationPolicy": "AI_ALLOWED", "allowAutoBacklogIfEmpty": true}	2026-02-12 18:24:09.282441+00	2026-02-12 18:24:09.282441+00
+\.
+
+
+--
+-- Data for Name: template_files; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.template_files (id, template_id, file_name, file_type, content, "position", created_at, updated_at) FROM stdin;
+606b1a06-f3a4-4eab-b60c-86035e64a434	ec251b4c-4c98-47ea-a077-a9a75708566b	index.html	html	<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n  <meta charset="UTF-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  <title>Novo Template</title>\n</head>\n<body>\n  <main>\n    <h1>Novo Template</h1>\n    <p>Edite o HTML, CSS e JS para personalizar este projeto.</p>\n  </main>\n</body>\n</html>	0	2026-02-12 00:40:12.446933+00	2026-02-12 00:40:12.446933+00
+3533ab68-e113-4058-aa2b-a7b2e6978fa9	ec251b4c-4c98-47ea-a077-a9a75708566b	style.css	css	body { font-family: Arial, sans-serif; }	1	2026-02-12 00:40:12.488918+00	2026-02-12 00:40:12.488918+00
+bd2eb5ac-1b5a-4766-88ce-c43d8a1c0e40	ec251b4c-4c98-47ea-a077-a9a75708566b	script.js	js	console.log('Template pronto');	2	2026-02-12 00:40:12.495922+00	2026-02-12 00:40:12.495922+00
+\.
+
+
+--
+-- Data for Name: template_resources; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.template_resources (id, template_id, title, type, content, "position", created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: template_tasks; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.template_tasks (id, template_id, title, description, status, "position", created_at, updated_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: templates; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.templates (id, name, description, version, is_active, created_at, updated_at, blog_content, level, category) FROM stdin;
+f8fff3c5-584e-42f3-b0f8-396cc9adea52	Default	Template padrão do sistema	1	t	2026-02-11 22:15:34.090523+00	2026-02-11 22:15:34.090523+00			
+ec251b4c-4c98-47ea-a077-a9a75708566b	Holding Kapital Technology		2	t	2026-02-11 23:36:30.284879+00	2026-02-11 23:36:30.284879+00			
+\.
+
+
+--
+-- Data for Name: user_cards; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.user_cards (id, user_id, seed, name, species, class, rarity, attributes, level, xp, created_at, updated_at, hash_seed, visual_meta, market_value, image_url) FROM stdin;
+7e4f39b4-b629-4cc7-a61c-04b716d801ee	saulolsc@gmail.com	1800176575	Solor	Zyphor	Batedor	comum	{"speed": 58, "strength": 52, "endurance": 62, "intelligence": 50}	1	5	2026-01-30 16:59:23.17044+00	2026-02-10 10:50:15.168933+00	f927c3b7f8fcfc4cb7de6cc3ca863f6236c166820fb2bf4886f2093046675957	{"aura": 0, "eyes": 4, "glow": false, "horns": 3, "palette": {"accent": "#c330e8", "primary": "#634ce6", "secondary": "#2f4319"}, "pattern": 3}	10.00	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fsaulolsc%40gmail.com-f927c3b7f8fc.svg?v=1770720615167
+edcb2ff0-7e41-4db5-b9b2-0cff1bb12f96	gusmaokamila2@gmail.com	1795865384	Vexa	Orionid	Explorador	comum	{"speed": 46, "strength": 46, "endurance": 66, "intelligence": 52}	1	0	2026-01-30 17:47:44.221571+00	2026-02-06 18:32:39.312367+00	7e3b0a4fee94a6874e912cd77ee11fa5056c81c55985917b2d86ac98f616a0fb	{"aura": 1, "eyes": 4, "glow": false, "horns": 3, "palette": {"accent": "#30d9e8", "primary": "#4ce65c", "secondary": "#431931"}, "pattern": 4}	11.50	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fgusmaokamila2%40gmail.com-7e3b0a4fee94.svg?v=1770402759311
+7d29ea9f-6788-405c-b411-72f977dafc5f	igormattar8@gmail.com	129708429	Vexor	Orionid	Tecnomante	comum	{"speed": 66, "strength": 69, "endurance": 71, "intelligence": 50}	1	0	2026-02-07 14:20:58.945313+00	2026-02-07 14:21:20.527688+00	747fc2fa9ebbab9628270155993f7471e7ead5e3dbbbb1a2a58da3563a712d5d	{"aura": 0, "eyes": 3, "glow": true, "horns": 3, "palette": {"accent": "#3a30e8", "primary": "#57e64c", "secondary": "#431938"}, "pattern": 2}	12.27	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Figormattar8%40gmail.com-747fc2fa9ebb.svg?v=1770474080527
+2ee35044-0a5f-4d21-b1af-88f3dc10525f	vic.candeira.araujo@gmail.com	474864967	Lumar	Orionid	Batedor	comum	{"speed": 41, "strength": 77, "endurance": 52, "intelligence": 69}	1	0	2026-02-04 22:06:01.784709+00	2026-02-04 22:06:10.10555+00	a3f3bf0bd4665f2d2225ec3ecdee3190c7aede0c1c346409ed1a1ce9be5a49ec	{"aura": 2, "eyes": 4, "glow": false, "horns": 2, "palette": {"accent": "#e8bd30", "primary": "#4ce6ba", "secondary": "#431b19"}, "pattern": 5}	11.98	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fvic.candeira.araujo%40gmail.com-a3f3bf0bd466.svg?v=1770242770105
+c9fccaa5-4f40-478d-a74a-2be8191fddfd	master@hktech.com.br	158464131	Nyxa	Zyphor	Cronista	comum	{"speed": 67, "strength": 58, "endurance": 74, "intelligence": 42}	1	20	2026-02-07 19:37:58.557561+00	2026-02-12 20:09:33.444043+00	4b6af5b9f29c0d0e468d6764fe6a36bd4bcf8241e1fa765602040670cca73064	{"aura": 1, "eyes": 2, "glow": false, "horns": 2, "palette": {"accent": "#30e5e8", "primary": "#bfe64c", "secondary": "#311943"}, "pattern": 5}	12.02	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fmaster%40hktech.com.br-4b6af5b9f29c.svg?v=1770926973444
+b3719445-3717-43ad-9557-b3ac1a41b99a	pxycoelho@gmail.com	200108626	Kaela	Orionid	Batedor	comum	{"speed": 46, "strength": 47, "endurance": 68, "intelligence": 49}	1	0	2026-02-06 17:51:51.53375+00	2026-02-06 17:51:51.53375+00	b7b45f061c84ac4345f1f97e785b63f155607d26b40816087ea8bb1d986e9de1	{"aura": 1, "eyes": 3, "glow": false, "horns": 3, "palette": {"accent": "#e83a30", "primary": "#4cdee6", "secondary": "#432919"}, "pattern": 5}	11.50	https://storage.googleapis.com/counter-9d5a3.firebasestorage.app/aliens%2Fpxycoelho%40gmail.com-b7b45f061c84.svg?v=1770400311533
+\.
+
+
+--
+-- Data for Name: user_gamification; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.user_gamification (user_id, plan, usage_score, xp, created_at, updated_at) FROM stdin;
+gusmaokamila2@gmail.com	free	0	150	2026-01-30 17:33:00.645848+00	2026-01-30 18:14:21.648606+00
+saulolsc@gmail.com	free	0	125	2026-01-30 16:41:18.186557+00	2026-01-31 16:32:13.643207+00
+vic.candeira.araujo@gmail.com	free	0	0	2026-02-04 22:06:01.262516+00	2026-02-04 22:06:01.262516+00
+pxycoelho@gmail.com	free	0	0	2026-02-06 17:51:50.950715+00	2026-02-06 17:51:50.950715+00
+igormattar8@gmail.com	free	0	25	2026-02-07 14:20:58.209354+00	2026-02-07 14:21:17.556943+00
+master@hktech.com.br	free	0	0	2026-02-07 19:37:58.557561+00	2026-02-07 19:37:58.557561+00
+\.
+
+
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.users (id, auth_uid, name, email, photo_url, auth_provider, permission_level, status, created_at, last_login_at) FROM stdin;
+3434c601-7fd3-4a8a-917a-168e23d30c41	UO8eN9Kef2WnsV6FAleAjFUIVPD2	Saulo Silva	saulolsc@gmail.com	https://lh3.googleusercontent.com/a/AGNmyxY3GDFurLpQrp1b6EjWMg1tV3Sad2nbuPgLbUpDjA=s96-c	google.com	C	Ativo	2026-01-30 03:22:02.162184+00	2026-02-07 23:41:21.26512+00
+192dbeac-60ec-484d-83a8-ebb70e492324	J8x07k7ZuVWOK2Bod9mo4KDMcA93	victoria	vic.candeira.araujo@gmail.com	https://lh3.googleusercontent.com/a/ACg8ocJvPOYsoeOguPKyMXnViJ54EtHQcCzkUY9XncW0O6ZvNqsaLuyMSQ=s96-c	google.com	A	Ativo	2026-02-04 22:05:30.577675+00	2026-02-04 22:05:30.584168+00
+acec0fb1-561a-4c4f-a36e-25cb2fb99ccc	h0yiWQWfOYS3YugUBozpwV6Cfnv1	Usuário Anônimo	master@hktech.com.br		password	B	Inativo	2026-01-30 03:58:59.31135+00	2026-02-14 22:43:35.749553+00
+cfacd3d2-28e7-43b7-b7bd-c2dcbfdf528f	wwnmEAwlMXP6AhQniZmvHaI7c0n1	Igor Mattar	igormattar8@gmail.com	https://lh3.googleusercontent.com/a/ACg8ocKd4s3wH-f0A3Pf1RIFMd0kKlLrGSAp-i7mYZOjSrxE9KEBPw=s96-c	google.com	A	Ativo	2026-02-07 14:17:27.966041+00	2026-02-07 14:17:27.967363+00
+757c8ddf-6713-436d-b15f-74692526e9e5	Gd4QbgiL8FRNIZauahPsUfOZ5uB2	pxy coelho	pxycoelho@gmail.com	https://lh3.googleusercontent.com/a/ACg8ocKglpx40Z0OQIWTeMbs5rzLNJnmVwlGl3f_CLV8TNALCRxqRWE=s96-c	google.com	A	Ativo	2026-02-06 17:08:01.756475+00	2026-02-06 17:51:12.333792+00
+5b281662-e401-49bc-8b94-dc1745582dba	bmESmZT2Nih3D0miTivfx6C5Hak1	Kamila Gusmão	gusmaokamila2@gmail.com	https://lh3.googleusercontent.com/a/ACg8ocJjn9BP-amgVMGooWzN-Moc8syVBxYz6MRyPB6LDOXXgXN5iWiL=s96-c	google.com	A	Ativo	2026-01-30 17:32:28.366938+00	2026-02-06 18:32:34.152833+00
+\.
+
+
+--
+-- Data for Name: wallet_positions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.wallet_positions (id, wallet_id, asset_id, quantity, avg_price, created_at) FROM stdin;
+b57b1801-8d5c-4014-87cf-613ce0203d23	a079e588-9e5f-4bd6-aeb3-36460573e82f	f046a6db-8de2-4caa-8706-035d0b927df7	1000000.0000	1.00	2026-01-30 02:40:39.429914+00
+05e972b5-ff1e-4182-a8bf-210380362245	24f00293-203c-4311-bc94-c085222ac536	f046a6db-8de2-4caa-8706-035d0b927df7	1000000.0000	1.00	2026-01-30 02:52:45.825952+00
+\.
+
+
+--
+-- Data for Name: wallets; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.wallets (id, user_id, cash_balance, currency, created_at) FROM stdin;
+f052fbf9-a530-4e18-93fd-bc63289dde90	default	100000.00	BRL	2026-01-30 02:16:44.277257+00
+a079e588-9e5f-4bd6-aeb3-36460573e82f	saulolsc@gmail.com	0.00	BRL	2026-01-30 02:40:39.429914+00
+24f00293-203c-4311-bc94-c085222ac536	master@hktech.com.br	0.00	BRL	2026-01-30 02:52:45.825952+00
+\.
+
+
+--
+-- Name: accesses accesses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accesses
+    ADD CONSTRAINT accesses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: admin_actions admin_actions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.admin_actions
+    ADD CONSTRAINT admin_actions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_reports ai_reports_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_reports
+    ADD CONSTRAINT ai_reports_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: assets assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.assets
+    ADD CONSTRAINT assets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: card_listings card_listings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.card_listings
+    ADD CONSTRAINT card_listings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: card_transactions card_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.card_transactions
+    ADD CONSTRAINT card_transactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: commerce_orders commerce_orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.commerce_orders
+    ADD CONSTRAINT commerce_orders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: costs costs_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.costs
+    ADD CONSTRAINT costs_name_key UNIQUE (name);
+
+
+--
+-- Name: costs costs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.costs
+    ADD CONSTRAINT costs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: dao_mybot_balances dao_mybot_balances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dao_mybot_balances
+    ADD CONSTRAINT dao_mybot_balances_pkey PRIMARY KEY (mybot_id);
+
+
+--
+-- Name: dao_proposals dao_proposals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dao_proposals
+    ADD CONSTRAINT dao_proposals_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: dao_votes dao_votes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dao_votes
+    ADD CONSTRAINT dao_votes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deposit_accounts deposit_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.deposit_accounts
+    ADD CONSTRAINT deposit_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: deposit_transactions deposit_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.deposit_transactions
+    ADD CONSTRAINT deposit_transactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: fund_holdings fund_holdings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fund_holdings
+    ADD CONSTRAINT fund_holdings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: funds funds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.funds
+    ADD CONSTRAINT funds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ia_agents ia_agents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_agents
+    ADD CONSTRAINT ia_agents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ia_contexts ia_contexts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_contexts
+    ADD CONSTRAINT ia_contexts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ia_conversations ia_conversations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_conversations
+    ADD CONSTRAINT ia_conversations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ia_memory ia_memory_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_memory
+    ADD CONSTRAINT ia_memory_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ia_messages ia_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_messages
+    ADD CONSTRAINT ia_messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ia_orchestrator_executions ia_orchestrator_executions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_orchestrator_executions
+    ADD CONSTRAINT ia_orchestrator_executions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ia_orchestrators ia_orchestrators_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_orchestrators
+    ADD CONSTRAINT ia_orchestrators_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ia_prompt_versions ia_prompt_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_prompt_versions
+    ADD CONSTRAINT ia_prompt_versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ia_prompts ia_prompts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_prompts
+    ADD CONSTRAINT ia_prompts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: internal_accounts internal_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.internal_accounts
+    ADD CONSTRAINT internal_accounts_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: internal_transactions internal_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.internal_transactions
+    ADD CONSTRAINT internal_transactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: llm_telemetry llm_telemetry_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.llm_telemetry
+    ADD CONSTRAINT llm_telemetry_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_activations mybot_activations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_activations
+    ADD CONSTRAINT mybot_activations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_battle_queue mybot_battle_queue_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_battle_queue
+    ADD CONSTRAINT mybot_battle_queue_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_battles mybot_battles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_battles
+    ADD CONSTRAINT mybot_battles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_bets mybot_bets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_bets
+    ADD CONSTRAINT mybot_bets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_cpf_registry mybot_cpf_registry_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_cpf_registry
+    ADD CONSTRAINT mybot_cpf_registry_pkey PRIMARY KEY (cpf_hash);
+
+
+--
+-- Name: mybot_events mybot_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_events
+    ADD CONSTRAINT mybot_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_evolutions mybot_evolutions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_evolutions
+    ADD CONSTRAINT mybot_evolutions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_maps mybot_maps_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_maps
+    ADD CONSTRAINT mybot_maps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_memory mybot_memory_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_memory
+    ADD CONSTRAINT mybot_memory_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_movements mybot_movements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_movements
+    ADD CONSTRAINT mybot_movements_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mybot_profiles mybot_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_profiles
+    ADD CONSTRAINT mybot_profiles_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: mybot_stats mybot_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybot_stats
+    ADD CONSTRAINT mybot_stats_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: mybots mybots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.mybots
+    ADD CONSTRAINT mybots_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: orders orders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: price_history price_history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.price_history
+    ADD CONSTRAINT price_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: product_types product_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_types
+    ADD CONSTRAINT product_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_tasks project_tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_tasks
+    ADD CONSTRAINT project_tasks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: purchases purchases_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sales sales_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sales
+    ADD CONSTRAINT sales_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: settings settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.settings
+    ADD CONSTRAINT settings_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: system_config system_config_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.system_config
+    ADD CONSTRAINT system_config_key_key UNIQUE (key);
+
+
+--
+-- Name: system_config system_config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.system_config
+    ADD CONSTRAINT system_config_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: template_files template_files_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_files
+    ADD CONSTRAINT template_files_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: template_resources template_resources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_resources
+    ADD CONSTRAINT template_resources_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: template_tasks template_tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_tasks
+    ADD CONSTRAINT template_tasks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: templates templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.templates
+    ADD CONSTRAINT templates_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_cards user_cards_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_cards
+    ADD CONSTRAINT user_cards_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_cards user_cards_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_cards
+    ADD CONSTRAINT user_cards_user_id_key UNIQUE (user_id);
+
+
+--
+-- Name: user_gamification user_gamification_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_gamification
+    ADD CONSTRAINT user_gamification_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_email_key UNIQUE (email);
+
+
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: wallet_positions wallet_positions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wallet_positions
+    ADD CONSTRAINT wallet_positions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: wallets wallets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wallets
+    ADD CONSTRAINT wallets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: admin_actions_admin_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX admin_actions_admin_id_idx ON public.admin_actions USING btree (admin_id);
+
+
+--
+-- Name: ai_reports_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ai_reports_created_at_idx ON public.ai_reports USING btree (created_at DESC);
+
+
+--
+-- Name: ai_reports_domain_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ai_reports_domain_idx ON public.ai_reports USING btree (domain);
+
+
+--
+-- Name: dao_mybot_balances_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX dao_mybot_balances_user_idx ON public.dao_mybot_balances USING btree (user_id);
+
+
+--
+-- Name: dao_proposals_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX dao_proposals_created_at_idx ON public.dao_proposals USING btree (created_at DESC);
+
+
+--
+-- Name: dao_proposals_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX dao_proposals_status_idx ON public.dao_proposals USING btree (status);
+
+
+--
+-- Name: dao_votes_proposal_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX dao_votes_proposal_idx ON public.dao_votes USING btree (proposal_id);
+
+
+--
+-- Name: dao_votes_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX dao_votes_user_idx ON public.dao_votes USING btree (user_id);
+
+
+--
+-- Name: ia_agents_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_agents_active_idx ON public.ia_agents USING btree (is_active);
+
+
+--
+-- Name: ia_agents_specialty_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_agents_specialty_idx ON public.ia_agents USING btree (specialty);
+
+
+--
+-- Name: ia_contexts_agent_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_contexts_agent_idx ON public.ia_contexts USING btree (related_agent_id);
+
+
+--
+-- Name: ia_contexts_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_contexts_type_idx ON public.ia_contexts USING btree (context_type);
+
+
+--
+-- Name: ia_memory_context_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_memory_context_type_idx ON public.ia_memory USING btree (context_type);
+
+
+--
+-- Name: ia_memory_embedding_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_memory_embedding_idx ON public.ia_memory USING ivfflat (embedding public.vector_cosine_ops);
+
+
+--
+-- Name: ia_memory_prompt_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_memory_prompt_idx ON public.ia_memory USING btree (prompt_id);
+
+
+--
+-- Name: ia_memory_related_task_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_memory_related_task_idx ON public.ia_memory USING btree (related_task_id);
+
+
+--
+-- Name: ia_memory_source_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_memory_source_id_idx ON public.ia_memory USING btree (source_id);
+
+
+--
+-- Name: ia_memory_source_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_memory_source_type_idx ON public.ia_memory USING btree (source_type);
+
+
+--
+-- Name: ia_messages_conversation_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_messages_conversation_idx ON public.ia_messages USING btree (conversation_id, created_at DESC);
+
+
+--
+-- Name: ia_orchestrator_exec_created_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_orchestrator_exec_created_idx ON public.ia_orchestrator_executions USING btree (created_at DESC);
+
+
+--
+-- Name: ia_orchestrator_exec_orchestrator_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_orchestrator_exec_orchestrator_idx ON public.ia_orchestrator_executions USING btree (orchestrator_id);
+
+
+--
+-- Name: ia_orchestrators_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_orchestrators_active_idx ON public.ia_orchestrators USING btree (is_active);
+
+
+--
+-- Name: ia_orchestrators_updated_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_orchestrators_updated_idx ON public.ia_orchestrators USING btree (updated_at DESC);
+
+
+--
+-- Name: ia_prompt_versions_prompt_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_prompt_versions_prompt_idx ON public.ia_prompt_versions USING btree (prompt_id, version DESC);
+
+
+--
+-- Name: ia_prompts_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_prompts_active_idx ON public.ia_prompts USING btree (is_active);
+
+
+--
+-- Name: ia_prompts_category_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ia_prompts_category_idx ON public.ia_prompts USING btree (category);
+
+
+--
+-- Name: ia_prompts_file_name_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ia_prompts_file_name_idx ON public.ia_prompts USING btree (file_name);
+
+
+--
+-- Name: llm_telemetry_agent_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX llm_telemetry_agent_idx ON public.llm_telemetry USING btree (agent);
+
+
+--
+-- Name: llm_telemetry_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX llm_telemetry_created_at_idx ON public.llm_telemetry USING btree (created_at);
+
+
+--
+-- Name: llm_telemetry_model_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX llm_telemetry_model_idx ON public.llm_telemetry USING btree (model);
+
+
+--
+-- Name: mybot_activations_cpf_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_activations_cpf_idx ON public.mybot_activations USING btree (cpf_hash);
+
+
+--
+-- Name: mybot_activations_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_activations_user_idx ON public.mybot_activations USING btree (user_id);
+
+
+--
+-- Name: mybot_battle_queue_status_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_battle_queue_status_idx ON public.mybot_battle_queue USING btree (status, bet_amount, level, rarity_rank);
+
+
+--
+-- Name: mybot_battles_user_a_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_battles_user_a_idx ON public.mybot_battles USING btree (user_id_a, created_at DESC);
+
+
+--
+-- Name: mybot_battles_user_b_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_battles_user_b_idx ON public.mybot_battles USING btree (user_id_b, created_at DESC);
+
+
+--
+-- Name: mybot_bets_battle_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_bets_battle_idx ON public.mybot_bets USING btree (battle_id);
+
+
+--
+-- Name: mybot_bets_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_bets_user_idx ON public.mybot_bets USING btree (user_id, created_at DESC);
+
+
+--
+-- Name: mybot_events_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_events_user_idx ON public.mybot_events USING btree (user_id, occurred_at DESC);
+
+
+--
+-- Name: mybot_memory_user_layer_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_memory_user_layer_idx ON public.mybot_memory USING btree (user_id, layer);
+
+
+--
+-- Name: mybot_movements_bot_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_movements_bot_idx ON public.mybot_movements USING btree (bot_id, created_at DESC);
+
+
+--
+-- Name: mybot_movements_created_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_movements_created_idx ON public.mybot_movements USING btree (created_at DESC);
+
+
+--
+-- Name: mybot_profiles_card_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_profiles_card_idx ON public.mybot_profiles USING btree (card_id);
+
+
+--
+-- Name: mybot_profiles_current_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_profiles_current_idx ON public.mybot_profiles USING btree (current_map_id);
+
+
+--
+-- Name: mybot_profiles_origin_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX mybot_profiles_origin_idx ON public.mybot_profiles USING btree (origin_map_id);
+
+
+--
+-- Name: products_template_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX products_template_id_idx ON public.products USING btree (template_id);
+
+
+--
+-- Name: project_tasks_domain_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX project_tasks_domain_idx ON public.project_tasks USING btree (domain);
+
+
+--
+-- Name: project_tasks_generated_ai_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX project_tasks_generated_ai_idx ON public.project_tasks USING btree (generated_by_ai);
+
+
+--
+-- Name: project_tasks_ia_created_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX project_tasks_ia_created_at_idx ON public.project_tasks USING btree (created_at DESC) WHERE (((domain)::text = 'IA'::text) AND (project_id IS NULL));
+
+
+--
+-- Name: project_tasks_linked_agent_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX project_tasks_linked_agent_idx ON public.project_tasks USING btree (linked_agent_id);
+
+
+--
+-- Name: project_tasks_project_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX project_tasks_project_id_idx ON public.project_tasks USING btree (project_id);
+
+
+--
+-- Name: project_tasks_specialist_type_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX project_tasks_specialist_type_idx ON public.project_tasks USING btree (specialist_type);
+
+
+--
+-- Name: projects_base_project_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX projects_base_project_id_idx ON public.projects USING btree (base_project_id);
+
+
+--
+-- Name: projects_is_template_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX projects_is_template_idx ON public.projects USING btree (is_template);
+
+
+--
+-- Name: projects_owner_product_uidx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX projects_owner_product_uidx ON public.projects USING btree (owner_user_id, product_id) WHERE ((owner_user_id <> ''::text) AND (product_id IS NOT NULL) AND (is_template = false));
+
+
+--
+-- Name: projects_owner_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX projects_owner_user_id_idx ON public.projects USING btree (owner_user_id);
+
+
+--
+-- Name: projects_product_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX projects_product_id_idx ON public.projects USING btree (product_id);
+
+
+--
+-- Name: projects_purchase_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX projects_purchase_id_idx ON public.projects USING btree (purchase_id);
+
+
+--
+-- Name: projects_template_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX projects_template_id_idx ON public.projects USING btree (template_id);
+
+
+--
+-- Name: purchases_product_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX purchases_product_id_idx ON public.purchases USING btree (product_id);
+
+
+--
+-- Name: purchases_project_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX purchases_project_id_idx ON public.purchases USING btree (project_id);
+
+
+--
+-- Name: purchases_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX purchases_user_id_idx ON public.purchases USING btree (user_id);
+
+
+--
+-- Name: purchases_user_product_active_uidx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX purchases_user_product_active_uidx ON public.purchases USING btree (user_id, product_id) WHERE (status = 'completed'::text);
+
+
+--
+-- Name: system_config_key_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX system_config_key_idx ON public.system_config USING btree (key);
+
+
+--
+-- Name: template_files_template_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_files_template_id_idx ON public.template_files USING btree (template_id);
+
+
+--
+-- Name: template_resources_template_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_resources_template_id_idx ON public.template_resources USING btree (template_id);
+
+
+--
+-- Name: template_tasks_template_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_tasks_template_id_idx ON public.template_tasks USING btree (template_id);
+
+
+--
+-- Name: templates_is_active_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX templates_is_active_idx ON public.templates USING btree (is_active);
+
+
+--
+-- Name: card_listings card_listings_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.card_listings
+    ADD CONSTRAINT card_listings_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.user_cards(id) ON DELETE CASCADE;
+
+
+--
+-- Name: card_transactions card_transactions_card_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.card_transactions
+    ADD CONSTRAINT card_transactions_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.user_cards(id) ON DELETE SET NULL;
+
+
+--
+-- Name: dao_votes dao_votes_proposal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dao_votes
+    ADD CONSTRAINT dao_votes_proposal_id_fkey FOREIGN KEY (proposal_id) REFERENCES public.dao_proposals(id) ON DELETE CASCADE;
+
+
+--
+-- Name: deposit_transactions deposit_transactions_account_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.deposit_transactions
+    ADD CONSTRAINT deposit_transactions_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.deposit_accounts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: fund_holdings fund_holdings_asset_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fund_holdings
+    ADD CONSTRAINT fund_holdings_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES public.assets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: fund_holdings fund_holdings_fund_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fund_holdings
+    ADD CONSTRAINT fund_holdings_fund_id_fkey FOREIGN KEY (fund_id) REFERENCES public.funds(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ia_contexts ia_contexts_related_agent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_contexts
+    ADD CONSTRAINT ia_contexts_related_agent_id_fkey FOREIGN KEY (related_agent_id) REFERENCES public.ia_agents(id) ON DELETE SET NULL;
+
+
+--
+-- Name: ia_memory ia_memory_prompt_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_memory
+    ADD CONSTRAINT ia_memory_prompt_fkey FOREIGN KEY (prompt_id) REFERENCES public.ia_prompts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: ia_memory ia_memory_related_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_memory
+    ADD CONSTRAINT ia_memory_related_task_id_fkey FOREIGN KEY (related_task_id) REFERENCES public.project_tasks(id) ON DELETE SET NULL;
+
+
+--
+-- Name: ia_messages ia_messages_conversation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_messages
+    ADD CONSTRAINT ia_messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES public.ia_conversations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ia_orchestrator_executions ia_orchestrator_executions_orchestrator_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_orchestrator_executions
+    ADD CONSTRAINT ia_orchestrator_executions_orchestrator_id_fkey FOREIGN KEY (orchestrator_id) REFERENCES public.ia_orchestrators(id) ON DELETE SET NULL;
+
+
+--
+-- Name: ia_prompt_versions ia_prompt_versions_prompt_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ia_prompt_versions
+    ADD CONSTRAINT ia_prompt_versions_prompt_id_fkey FOREIGN KEY (prompt_id) REFERENCES public.ia_prompts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: orders orders_asset_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES public.assets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: price_history price_history_asset_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.price_history
+    ADD CONSTRAINT price_history_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES public.assets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: products products_base_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_base_project_id_fkey FOREIGN KEY (base_project_id) REFERENCES public.projects(id) ON DELETE SET NULL;
+
+
+--
+-- Name: products products_product_type_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_product_type_fkey FOREIGN KEY (product_type) REFERENCES public.product_types(id);
+
+
+--
+-- Name: products products_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_template_id_fkey FOREIGN KEY (template_id) REFERENCES public.templates(id) ON DELETE SET NULL;
+
+
+--
+-- Name: project_tasks project_tasks_linked_agent_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_tasks
+    ADD CONSTRAINT project_tasks_linked_agent_fkey FOREIGN KEY (linked_agent_id) REFERENCES public.ia_agents(id) ON DELETE SET NULL;
+
+
+--
+-- Name: project_tasks project_tasks_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.project_tasks
+    ADD CONSTRAINT project_tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: projects projects_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
+
+
+--
+-- Name: purchases purchases_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: purchases purchases_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_files template_files_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_files
+    ADD CONSTRAINT template_files_template_id_fkey FOREIGN KEY (template_id) REFERENCES public.templates(id) ON DELETE CASCADE;
+
+
+--
+-- Name: template_resources template_resources_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_resources
+    ADD CONSTRAINT template_resources_template_id_fkey FOREIGN KEY (template_id) REFERENCES public.templates(id) ON DELETE CASCADE;
+
+
+--
+-- Name: template_tasks template_tasks_template_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_tasks
+    ADD CONSTRAINT template_tasks_template_id_fkey FOREIGN KEY (template_id) REFERENCES public.templates(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wallet_positions wallet_positions_asset_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wallet_positions
+    ADD CONSTRAINT wallet_positions_asset_id_fkey FOREIGN KEY (asset_id) REFERENCES public.assets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: wallet_positions wallet_positions_wallet_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wallet_positions
+    ADD CONSTRAINT wallet_positions_wallet_id_fkey FOREIGN KEY (wallet_id) REFERENCES public.wallets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: -
+--
+
+GRANT ALL ON SCHEMA public TO cloudsqlsuperuser;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict EFqf3L82JU8oD9fwkPMLZ1Qyoas5U1AZOQfZcqb7VaYwbIWvoSYdAuuiDZN8NEd
+

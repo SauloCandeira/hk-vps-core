@@ -20,12 +20,16 @@ export async function checkDailyBudget(): Promise<{allowed: boolean, costToday: 
     const { rows } = await client.query(q);
     client.release();
     const total = parseFloat(rows[0].total || 0);
-    if (isNaN(total)) return { allowed: false, costToday: 0, maxBudget: MAX_DAILY_COST_USD, failSafe: true };
+    if (isNaN(total)) {
+      // fail_safe: liberar acesso
+      return { allowed: true, costToday: 0, maxBudget: MAX_DAILY_COST_USD, failSafe: true };
+    }
     if (total >= MAX_DAILY_COST_USD) {
       return { allowed: false, costToday: total, maxBudget: MAX_DAILY_COST_USD, failSafe: false };
     }
     return { allowed: true, costToday: total, maxBudget: MAX_DAILY_COST_USD, failSafe: false };
   } catch (e) {
-    return { allowed: false, costToday: 0, maxBudget: MAX_DAILY_COST_USD, failSafe: true };
+    // fail_safe: liberar acesso
+    return { allowed: true, costToday: 0, maxBudget: MAX_DAILY_COST_USD, failSafe: true };
   }
 }

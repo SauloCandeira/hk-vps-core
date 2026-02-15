@@ -114,17 +114,22 @@ export const getLatestReport = () => {
 export const listCrons = () => {
   const jobsPath = path.join(openclawConfig.cronDir, "jobs.json");
   const content = safeReadFile(jobsPath);
-  let jobs = [];
+  let jobsObj = { jobs: [] };
   if (content) {
     try {
-      jobs = JSON.parse(content);
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed)) {
+        jobsObj.jobs = parsed;
+      } else if (parsed && Array.isArray(parsed.jobs)) {
+        jobsObj = parsed;
+      }
     } catch (error) {
-      jobs = [];
+      jobsObj.jobs = [];
     }
   }
   return {
-    jobs,
-    jobs_count: Array.isArray(jobs) ? jobs.length : 0,
+    jobs: jobsObj,
+    jobs_count: Array.isArray(jobsObj.jobs) ? jobsObj.jobs.length : 0,
     runs_dir: openclawConfig.cronRunsDir
   };
 };

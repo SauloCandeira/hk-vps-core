@@ -16,6 +16,7 @@ const protectedPrefixes = [
 	"/agents",
 	"/contexts",
 	"/reports",
+	"/crons",
 	"/system",
 	"/metrics"
 ];
