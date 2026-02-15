@@ -1,0 +1,12 @@
+version: '3.9'
+services:
+  hk-vps-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hk-vps-core
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    restart: unless-stopped
