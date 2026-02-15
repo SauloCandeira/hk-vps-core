@@ -60,3 +60,7 @@ yarn.lock
 *.log
 logs/
 tmp/
+
+# Permitir serviços de runtime do código Nest
+!src/runtime/
+!src/runtime/**
